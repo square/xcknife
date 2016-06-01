@@ -16,4 +16,4 @@ DerivedData
 
 # XCKnife exemplar Specific
 derivedDataPath
-xcknife-exemplar.json-stream
+*.json-stream
