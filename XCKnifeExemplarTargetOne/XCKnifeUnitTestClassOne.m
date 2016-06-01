@@ -15,6 +15,9 @@
 @implementation XCKnifeUnitTestClassOne
 
 - (void)testMethodOne {
+    NSLog(@"sleeping");
+    [NSThread sleepForTimeInterval: 5.0f];
+    NSLog(@"done");
     XCTAssert(YES, @"Passing testMethodOne");
 }
 

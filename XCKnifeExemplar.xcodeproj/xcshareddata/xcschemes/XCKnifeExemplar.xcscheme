@@ -48,6 +48,66 @@
                ReferencedContainer = "container:XCKnifeExemplar.xcodeproj">
             </BuildableReference>
          </TestableReference>
+         <TestableReference
+            skipped = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "293159111CFEC0EE00F9049E"
+               BuildableName = "iPadTests.xctest"
+               BlueprintName = "iPadTests"
+               ReferencedContainer = "container:XCKnifeExemplar.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
+         <TestableReference
+            skipped = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "2931591F1CFEC0F800F9049E"
+               BuildableName = "iPhoneTests.xctest"
+               BlueprintName = "iPhoneTests"
+               ReferencedContainer = "container:XCKnifeExemplar.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
+         <TestableReference
+            skipped = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "2931592D1CFEC10300F9049E"
+               BuildableName = "CommonTests.xctest"
+               BlueprintName = "CommonTests"
+               ReferencedContainer = "container:XCKnifeExemplar.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
+         <TestableReference
+            skipped = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "2931593B1CFEC18300F9049E"
+               BuildableName = "iPadTestTarget.xctest"
+               BlueprintName = "iPadTestTarget"
+               ReferencedContainer = "container:XCKnifeExemplar.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
+         <TestableReference
+            skipped = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "293159491CFEC18C00F9049E"
+               BuildableName = "iPhoneTestTarget.xctest"
+               BlueprintName = "iPhoneTestTarget"
+               ReferencedContainer = "container:XCKnifeExemplar.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
+         <TestableReference
+            skipped = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "293159571CFEC19700F9049E"
+               BuildableName = "CommonTestTarget.xctest"
+               BlueprintName = "CommonTestTarget"
+               ReferencedContainer = "container:XCKnifeExemplar.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
       </Testables>
       <MacroExpansion>
          <BuildableReference
