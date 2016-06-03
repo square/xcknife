@@ -1,0 +1,38 @@
+#!/usr/bin/env ruby
+# encoding: utf-8
+
+# Script for cleaning up historical events, so that we only store the ones we need
+require 'set'
+require 'json' unless defined?(::JSON)
+
+INTERESTING_EVENTS = %w[begin-ocunit end-test].to_set
+def cleanup(input_file_name, output_file_name)
+  if input_file_name.nil? or output_file_name.nil?
+    return puts "Usage: xcknife_clean [input] [output]"
+  end
+  lines = IO.readlines(input_file_name)
+  lines_written = 0
+  total = lines.size
+  File.open(output_file_name, "w") do |f|
+    lines.each do |line|
+      data = JSON.load(line)
+      if INTERESTING_EVENTS.include?(data["event"])
+        lines_written += 1
+        %w[output sdk timestamp exceptions result succeeded methodName].each do |k|
+          data.delete(k)
+        end
+        if data["test"]
+          data["test"] = "1"
+        end
+        f.puts(data.to_json)
+      end
+    end
+  end
+  lines_removed = total - lines_written
+  percent = (100.0 * lines_removed / total).round(2)
+  puts "Done. Removed #{lines_removed} lines (#{percent}%) out of #{total}"
+  puts "Written new json-stream file to: #{output_file_name}"
+end
+
+input_file_name, output_file_name = ARGV
+cleanup input_file_name, output_file_name

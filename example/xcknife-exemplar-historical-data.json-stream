@@ -1,0 +1,14 @@
+{"bundleName":"CommonTestTarget.xctest","deviceName":"iPad Air","event":"begin-ocunit","targetName":"CommonTestTarget","testType":"logic-test","sdkName":"iphonesimulator9.2"}
+{"test":"1","className":"CommonTestClass","event":"end-test","totalDuration":0.1075069904327393}
+{"test":"1","className":"CommonTestClass","event":"end-test","totalDuration":0.303464949131012}
+{"test":"1","className":"CommonTestClass","event":"end-test","totalDuration":0.2003870010375977}
+{"bundleName":"iPadTestTarget.xctest","deviceName":"iPad Air","event":"begin-ocunit","targetName":"iPadTestTarget","testType":"application-test","sdkName":"iphonesimulator9.2"}
+{"test":"1","className":"iPadTestClassOne","event":"end-test","totalDuration":1.001249969005585}
+{"test":"1","className":"iPadTestClassThree","event":"end-test","totalDuration":0.5002140402793884}
+{"test":"1","className":"iPadTestClassTwo","event":"end-test","totalDuration":5.001157999038696}
+{"bundleName":"iPhoneTestTarget.xctest","deviceName":"iPad Air","event":"begin-ocunit","targetName":"iPhoneTestTarget","testType":"application-test","sdkName":"iphonesimulator9.2"}
+{"test":"1","className":"iPhoneTestClassAlpha","event":"end-test","totalDuration":0.2037490010261536}
+{"test":"1","className":"iPhoneTestClassBeta","event":"end-test","totalDuration":0.2012439966201782}
+{"test":"1","className":"iPhoneTestClassDelta","event":"end-test","totalDuration":0.1004489660263062}
+{"test":"1","className":"iPhoneTestClassGama","event":"end-test","totalDuration":0.3001730442047119}
+{"test":"1","className":"iPhoneTestClassOmega","event":"end-test","totalDuration":0.101157009601593}
