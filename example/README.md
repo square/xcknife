@@ -10,6 +10,4 @@ $ ruby run_example.rb
 
 This is equivalent to the example of: 
 
-```
-$ xcknife -p CommonTestTarget -p CommonTestTarget,iPadTestTarget 6 example/xcknife-exemplar-historical-data.json-stream example/xcknife-exemplar.json-stream
-```
+`$ xcknife -p CommonTestTarget -p CommonTestTarget,iPadTestTarget 6 example/xcknife-exemplar-historical-data.json-stream example/xcknife-exemplar.json-stream`
