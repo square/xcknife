@@ -1,4 +1,6 @@
 # XCKnife
+[![Gem Version](https://badge.fury.io/rb/xcknife.svg)](https://badge.fury.io/rb/xcknife)
+[![Build Status](https://travis-ci.org/square/xcknife.svg?branch=master)](https://travis-ci.org/square/xcknife)
 [![Apache 2 licensed](https://img.shields.io/badge/license-Apache2-blue.svg)](https://github.com/square/xcknife/blob/master/LICENSE)
 
 XCKnife is a tool that partitions XCTestCase tests in a way that minimizes total execution time (particularly useful for distributed test executions).
