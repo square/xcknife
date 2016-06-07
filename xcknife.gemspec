@@ -7,7 +7,7 @@ Gem::Specification.new do |s|
   s.name          = 'xcknife'
   s.version       = XCKnife::VERSION
   s.authors       = ['Daniel Ribeiro']
-  s.email         = %w[danielrb@squareup.com]
+  s.email         = %w[danielrb@squareup.com danrbr@gmail.com]
   s.homepage      = 'https://github.com/square/xcknife'
   s.licenses      = ['Apache-2.0']
 
