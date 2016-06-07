@@ -1,6 +1,6 @@
 # XCKnifeExemplar
 
-WIP
+Sample project for [XCKnife](https://github.com/square/xcknife).
 
 # Meta
 
