@@ -1,0 +1,5 @@
+language: objective-c
+osx_image: xcode7.2.1
+
+script:
+    - xcodebuild -project XCKnifeExemplar.xcodeproj -configuration Debug -derivedDataPath derivedDataPath -scheme XCKnifeExemplar -sdk iphonesimulator -destination "platform=iOS Simulator,name=iPad Air,OS=9.2" -reporter pretty -reporter json-stream:xcknife-exemplar-historical-data.json-stream test
