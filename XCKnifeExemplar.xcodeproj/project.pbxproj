@@ -12,6 +12,11 @@
 		293159671CFEC2AA00F9049E /* iPadTestClassTwo.m in Sources */ = {isa = PBXBuildFile; fileRef = 293159661CFEC2AA00F9049E /* iPadTestClassTwo.m */; };
 		293159691CFEC2D000F9049E /* iPhoneTestClassAlpha.m in Sources */ = {isa = PBXBuildFile; fileRef = 293159681CFEC2D000F9049E /* iPhoneTestClassAlpha.m */; };
 		2931596B1CFEC2DD00F9049E /* iPhoneTestClassBeta.m in Sources */ = {isa = PBXBuildFile; fileRef = 2931596A1CFEC2DD00F9049E /* iPhoneTestClassBeta.m */; };
+		29B517901CFECEFE00EF1856 /* iPadTestClassThree.m in Sources */ = {isa = PBXBuildFile; fileRef = 29B5178F1CFECEFE00EF1856 /* iPadTestClassThree.m */; };
+		29B517921CFECF0A00EF1856 /* iPadTestClassFour.m in Sources */ = {isa = PBXBuildFile; fileRef = 29B517911CFECF0A00EF1856 /* iPadTestClassFour.m */; };
+		29B517941CFECF6A00EF1856 /* iPhoneTestClassGama.m in Sources */ = {isa = PBXBuildFile; fileRef = 29B517931CFECF6A00EF1856 /* iPhoneTestClassGama.m */; };
+		29B517961CFECF8D00EF1856 /* iPhoneTestClassDelta.m in Sources */ = {isa = PBXBuildFile; fileRef = 29B517951CFECF8D00EF1856 /* iPhoneTestClassDelta.m */; };
+		29B517981CFECFA500EF1856 /* iPhoneTestClassOmega.m in Sources */ = {isa = PBXBuildFile; fileRef = 29B517971CFECFA500EF1856 /* iPhoneTestClassOmega.m */; };
 		29E4C80A1CFD2084003B9C7E /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 29E4C8091CFD2084003B9C7E /* main.m */; };
 		29E4C80D1CFD2084003B9C7E /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 29E4C80C1CFD2084003B9C7E /* AppDelegate.m */; };
 		29E4C8101CFD2084003B9C7E /* ViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 29E4C80F1CFD2084003B9C7E /* ViewController.m */; };
@@ -56,6 +61,11 @@
 		293159661CFEC2AA00F9049E /* iPadTestClassTwo.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = iPadTestClassTwo.m; sourceTree = "<group>"; };
 		293159681CFEC2D000F9049E /* iPhoneTestClassAlpha.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = iPhoneTestClassAlpha.m; sourceTree = "<group>"; };
 		2931596A1CFEC2DD00F9049E /* iPhoneTestClassBeta.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = iPhoneTestClassBeta.m; sourceTree = "<group>"; };
+		29B5178F1CFECEFE00EF1856 /* iPadTestClassThree.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = iPadTestClassThree.m; sourceTree = "<group>"; };
+		29B517911CFECF0A00EF1856 /* iPadTestClassFour.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = iPadTestClassFour.m; sourceTree = "<group>"; };
+		29B517931CFECF6A00EF1856 /* iPhoneTestClassGama.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = iPhoneTestClassGama.m; sourceTree = "<group>"; };
+		29B517951CFECF8D00EF1856 /* iPhoneTestClassDelta.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = iPhoneTestClassDelta.m; sourceTree = "<group>"; };
+		29B517971CFECFA500EF1856 /* iPhoneTestClassOmega.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = iPhoneTestClassOmega.m; sourceTree = "<group>"; };
 		29E4C8051CFD2084003B9C7E /* XCKnifeExemplar.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = XCKnifeExemplar.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		29E4C8091CFD2084003B9C7E /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
 		29E4C80B1CFD2084003B9C7E /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
@@ -103,6 +113,8 @@
 		2931593D1CFEC18400F9049E /* iPadTestTarget */ = {
 			isa = PBXGroup;
 			children = (
+				29B517911CFECF0A00EF1856 /* iPadTestClassFour.m */,
+				29B5178F1CFECEFE00EF1856 /* iPadTestClassThree.m */,
 				293159661CFEC2AA00F9049E /* iPadTestClassTwo.m */,
 				293159641CFEC29E00F9049E /* iPadTestClassOne.m */,
 				293159401CFEC18400F9049E /* Info.plist */,
@@ -113,6 +125,9 @@
 		2931594B1CFEC18C00F9049E /* iPhoneTestTarget */ = {
 			isa = PBXGroup;
 			children = (
+				29B517971CFECFA500EF1856 /* iPhoneTestClassOmega.m */,
+				29B517951CFECF8D00EF1856 /* iPhoneTestClassDelta.m */,
+				29B517931CFECF6A00EF1856 /* iPhoneTestClassGama.m */,
 				2931596A1CFEC2DD00F9049E /* iPhoneTestClassBeta.m */,
 				293159681CFEC2D000F9049E /* iPhoneTestClassAlpha.m */,
 				2931594E1CFEC18C00F9049E /* Info.plist */,
@@ -335,7 +350,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				29B517901CFECEFE00EF1856 /* iPadTestClassThree.m in Sources */,
 				293159671CFEC2AA00F9049E /* iPadTestClassTwo.m in Sources */,
+				29B517921CFECF0A00EF1856 /* iPadTestClassFour.m in Sources */,
 				293159651CFEC29E00F9049E /* iPadTestClassOne.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -344,7 +361,10 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				29B517961CFECF8D00EF1856 /* iPhoneTestClassDelta.m in Sources */,
 				293159691CFEC2D000F9049E /* iPhoneTestClassAlpha.m in Sources */,
+				29B517941CFECF6A00EF1856 /* iPhoneTestClassGama.m in Sources */,
+				29B517981CFECFA500EF1856 /* iPhoneTestClassOmega.m in Sources */,
 				2931596B1CFEC2DD00F9049E /* iPhoneTestClassBeta.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -593,6 +613,7 @@
 				293159451CFEC18400F9049E /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 		293159511CFEC18C00F9049E /* Build configuration list for PBXNativeTarget "iPhoneTestTarget" */ = {
 			isa = XCConfigurationList;
@@ -601,6 +622,7 @@
 				293159531CFEC18C00F9049E /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 		2931595F1CFEC19700F9049E /* Build configuration list for PBXNativeTarget "CommonTestTarget" */ = {
 			isa = XCConfigurationList;
@@ -609,6 +631,7 @@
 				293159611CFEC19700F9049E /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 		29E4C8001CFD2084003B9C7E /* Build configuration list for PBXProject "XCKnifeExemplar" */ = {
 			isa = XCConfigurationList;
