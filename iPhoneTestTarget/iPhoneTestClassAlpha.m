@@ -11,9 +11,4 @@
     XCTAssert(YES, @"Passing Ares");
 }
 
-- (void)testApollo {
-    [NSThread sleepForTimeInterval: .1f];
-    XCTAssert(YES, @"Passing testApollo");
-}
-
 @end

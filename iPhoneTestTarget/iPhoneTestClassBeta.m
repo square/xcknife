@@ -11,9 +11,4 @@
     XCTAssert(YES, @"Passing testArtemis");
 }
 
-- (void)testPoseidon {
-    [NSThread sleepForTimeInterval: .3f];
-    XCTAssert(YES, @"Passing testPoseidon");
-}
-
 @end
