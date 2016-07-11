@@ -97,7 +97,7 @@ outputing:
 
 ## Example: Multiple partition Sets
 
-You can pass the partition flag mutliple times, so that XCKnife will do two level partiotioning: inside each partition, and then for all partitions.
+You can pass the partition flag mutliple times, so that XCKnife will do two level partitioning: inside each partition, and then for all partitions.
   
 This is useful if each partition is tested against multiple devices, simulator versions or configurations. On the following example picture `CommonTestTarget` being tested against iPhones only, while `CommonTestTarget,iPadTestTarget` is tested against iPads.
 
