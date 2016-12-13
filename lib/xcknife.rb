@@ -5,5 +5,5 @@ require 'xcknife/runner'
 require 'xcknife/exceptions'
 
 module XCKnife
-  VERSION = '0.5.0'
+  VERSION = '0.6.0'
 end
