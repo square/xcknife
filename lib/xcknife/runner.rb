@@ -12,6 +12,7 @@ module XCKnife
 
     def initialize(args)
       @abbreviated_output = false
+      @xcodebuild_output = false
       @partitions = []
       @partition_names = []
       @worker_count = nil
@@ -30,9 +31,15 @@ module XCKnife
       warn "Error: #{e}"
       exit 1
     end
+
     private
     def gen_abbreviated_output(result)
-      result.test_maps.map { |partition_set| xctool_only_arguments_for_a_partition_set(partition_set) }
+      result.test_maps.map { |partition_set| only_arguments_for_a_partition_set(partition_set, output_type) }
+    end
+
+
+    def output_type
+      @xcodebuild_output ? :xcodebuild : :xctool
     end
 
     def gen_full_output(result)
@@ -66,7 +73,7 @@ module XCKnife
     def partition_data(result, shard_number, partition, partition_set_i, partition_j)
       {
         shard_number: shard_number,
-        cli_arguments: xctool_only_arguments(partition),
+        cli_arguments: only_arguments(output_type, partition),
         partition_imbalance_ratio: result.test_time_imbalances.partitions[partition_set_i][partition_j]
       }
     end
@@ -109,6 +116,7 @@ module XCKnife
         end
         opts.on("-o", "--output FILENAME", "Output file. Defaults to STDOUT") { |v| @output_file_name = v }
         opts.on("-a", "--abbrev", "Results are abbreviated") { |v| @abbreviated_output = v }
+        opts.on("-x", "--xcodebuild-output", "Output is formatted for xcodebuild") { |v| @xcodebuild_output = v }
 
         opts.on_tail("-h", "--help", "Show this message") do
           puts opts
