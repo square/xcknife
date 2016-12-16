@@ -3,3 +3,6 @@ pkg
 .idea/
 *.gem
 Gemfile.lock
+xcuserdata/
+testdumperbuild
+contents.xcworkspacedata
