@@ -6,3 +6,5 @@ Gemfile.lock
 xcuserdata/
 testdumperbuild
 contents.xcworkspacedata
+TestDumper/TestDumper.dylib
+*.tmp
