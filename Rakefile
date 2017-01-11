@@ -15,3 +15,8 @@ task :build_test_dumper do
     puts "TestDumper.dylib was created successfully"
   end
 end
+
+desc "Release wih test_dumper"
+task :gem_release => [:build_test_dumper, :build] do
+  system 'gem push pkg/xcknife-*.gem'
+end
