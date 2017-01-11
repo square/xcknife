@@ -8,7 +8,7 @@ require 'json' unless defined?(::JSON)
 INTERESTING_EVENTS = %w[begin-ocunit end-test].to_set
 def cleanup(input_file_name, output_file_name)
   if input_file_name.nil? or output_file_name.nil?
-    return puts "Usage: xcknife_clean [input] [output]"
+    return puts "Usage: xcknife-min [input] [output]"
   end
   lines = IO.readlines(input_file_name)
   lines_written = 0
