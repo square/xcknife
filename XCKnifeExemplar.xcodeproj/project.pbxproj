@@ -279,7 +279,6 @@
 					};
 					293159491CFEC18C00F9049E = {
 						CreatedOnToolsVersion = 7.2.1;
-						TestTargetID = 29E4C8041CFD2084003B9C7E;
 					};
 					293159571CFEC19700F9049E = {
 						CreatedOnToolsVersion = 7.2.1;
@@ -454,24 +453,20 @@
 		293159521CFEC18C00F9049E /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				BUNDLE_LOADER = "$(TEST_HOST)";
 				INFOPLIST_FILE = iPhoneTestTarget/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = com.example.iPhoneTestTarget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/XCKnifeExemplar.app/XCKnifeExemplar";
 			};
 			name = Debug;
 		};
 		293159531CFEC18C00F9049E /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				BUNDLE_LOADER = "$(TEST_HOST)";
 				INFOPLIST_FILE = iPhoneTestTarget/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = com.example.iPhoneTestTarget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/XCKnifeExemplar.app/XCKnifeExemplar";
 			};
 			name = Release;
 		};
