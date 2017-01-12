@@ -34,10 +34,10 @@ module XCKnife
     private
     def concat_to_file(test_specification, output_fd)
       file = test_specification.json_stream_file
-      wait_test_dumper_completion(file)
-        IO.readlines(file).each do |line|
+      IO.readlines(file).each do |line|
         event = OpenStruct.new(JSON.load(line))
         output_fd.write(line) unless should_test_event_be_ignored?(test_specification, event)
+        output_fd.flush
       end
       output_fd.flush
     end
@@ -47,30 +47,7 @@ module XCKnife
       return false unless event["test"] == "1"
       test_specification.skip_test_identifiers.include?(event["className"])
     end
-
-    def wait_test_dumper_completion(file)
-      retries_count = 0
-      until has_test_dumper_terminated?(file)  do
-        retries_count += 1
-        assert_has_not_timed_out(retries_count, file)
-        sleep 0.1
-      end
-    end
-
-    def assert_has_not_timed_out(retries_count, file)
-      if retries_count == 100
-        puts "Timeout error on: #{file}"
-        exit 1
-      end
-    end
-
-    def has_test_dumper_terminated?(file)
-      return false unless File.exists?(file)
-      last_line = `tail -n 1 "#{file}"`
-      return /Completed Test Dumper/.match(last_line)
-    end
   end
-
 
   class TestDumperHelper
     TestSpecification = Struct.new :json_stream_file, :skip_test_identifiers
@@ -95,10 +72,13 @@ module XCKnife
       xctestrun_as_json = `plutil -convert json -o - "#{xctestrun_file}"`
       FileUtils.mkdir_p(list_folder)
       JSON.load(xctestrun_as_json).map do |test_bundle_name, test_bundle|
-        list_tests_wiht_simctl(list_folder, test_bundle, test_bundle_name)
+        test_specification = list_tests_wiht_simctl(list_folder, test_bundle, test_bundle_name)
+        wait_test_dumper_completion(test_specification.json_stream_file)
+        test_specification
       end
     end
 
+    private
     def list_tests_wiht_simctl(list_folder, test_bundle, test_bundle_name)
       env_variables = test_bundle["EnvironmentVariables"]
       testing_env_variables = test_bundle["TestingEnvironmentVariables"]
@@ -141,8 +121,6 @@ module XCKnife
       return TestSpecification.new outpath, discover_tests_to_skip(test_bundle)
     end
 
-    private
-
     def discover_tests_to_skip(test_bundle)
       identifier_for_test_method = "/"
       skip_test_identifiers = test_bundle["SkipTestIdentifiers"] || []
@@ -175,6 +153,28 @@ module XCKnife
       until system("#{simctl} install #{@device_id} '#{test_host_path}'")
         sleep 0.1
       end
+    end
+
+    def wait_test_dumper_completion(file)
+      retries_count = 0
+      until has_test_dumper_terminated?(file)  do
+        retries_count += 1
+        assert_has_not_timed_out(retries_count, file)
+        sleep 0.1
+      end
+    end
+
+    def assert_has_not_timed_out(retries_count, file)
+      if retries_count == 100
+        puts "Timeout error on: #{file}"
+        exit 1
+      end
+    end
+
+    def has_test_dumper_terminated?(file)
+      return false unless File.exists?(file)
+      last_line = `tail -n 1 "#{file}"`
+      return /Completed Test Dumper/.match(last_line)
     end
 
     def run_apptest(env, test_host_bundle_identifier, test_bundle_path)
