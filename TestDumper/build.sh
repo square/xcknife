@@ -1,6 +1,6 @@
 #!/bin/bash
 xcodebuild -project TestDumper.xcodeproj \
-    -configuration Debug \
+    -configuration Release \
     -derivedDataPath testdumperbuild \
     -scheme TestDumper \
     -sdk iphonesimulator build
