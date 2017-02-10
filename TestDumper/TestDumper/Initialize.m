@@ -114,6 +114,8 @@ static void PrintTestClass(FILE *outFile, NSString *testClass) {
                          @"totalDuration" : @"0"});
 }
 
+void enumerateTests();
+
 const int TEST_TARGET_LEVEL = 0;
 const int TEST_CLASS_LEVEL = 1;
 const int TEST_METHOD_LEVEL = 2;
@@ -121,47 +123,58 @@ const int TEST_METHOD_LEVEL = 2;
 
 __attribute__((constructor))
 void initialize() {
+    NSString *testType = [NSString stringWithUTF8String: getenv("XCTEST_TYPE")];
+
+    if ([testType isEqualToString: @"APPTEST"]) {
+        [[NSNotificationCenter defaultCenter] addObserverForName:UIApplicationDidFinishLaunchingNotification object:nil queue:nil usingBlock:^(NSNotification * _Nonnull note) {
+            enumerateTests();
+        }];
+    } else {
+        enumerateTests();
+    }
+}
+
+
+void enumerateTests() {
     XCTestConfiguration *config = [[XCTestConfiguration alloc] init];
     NSString *testType = [NSString stringWithUTF8String: getenv("XCTEST_TYPE")];
     NSString *testTarget = [NSString stringWithUTF8String: getenv("XCTEST_TARGET")];
 
-    [[NSNotificationCenter defaultCenter] addObserverForName:UIApplicationDidFinishLaunchingNotification object:nil queue:nil usingBlock:^(NSNotification * _Nonnull note) {
-        if ([testType isEqualToString: @"APPTEST"]) {
-            config.testBundleURL = [NSURL fileURLWithPath:NSProcessInfo.processInfo.environment[@"XCInjectBundle"]];
-            config.targetApplicationPath = NSProcessInfo.processInfo.environment[@"XCInjectBundleInto"];
+    if ([testType isEqualToString: @"APPTEST"]) {
+        config.testBundleURL = [NSURL fileURLWithPath:NSProcessInfo.processInfo.environment[@"XCInjectBundle"]];
+        config.targetApplicationPath = NSProcessInfo.processInfo.environment[@"XCInjectBundleInto"];
 
-            NSString *configPath = [NSTemporaryDirectory() stringByAppendingPathComponent:[NSString stringWithFormat:@"%ul.xctestconfiguration", arc4random()]];
+        NSString *configPath = [NSTemporaryDirectory() stringByAppendingPathComponent:[NSString stringWithFormat:@"%ul.xctestconfiguration", arc4random()]];
 
-            NSLog(@"Writing config to %@", configPath);
+        NSLog(@"Writing config to %@", configPath);
 
-            NSData *data = [NSKeyedArchiver archivedDataWithRootObject:config];
+        NSData *data = [NSKeyedArchiver archivedDataWithRootObject:config];
 
-            [data writeToFile:configPath atomically:true];
+        [data writeToFile:configPath atomically:true];
 
-            setenv("XCTestConfigurationFilePath", configPath.UTF8String, YES);
+        setenv("XCTestConfigurationFilePath", configPath.UTF8String, YES);
 
-            dlopen(getenv("IDE_INJECTION_PATH"), RTLD_GLOBAL);
-        }
-        NSString *testBundle = [[[NSProcessInfo processInfo] arguments] lastObject];
-        [[NSBundle bundleWithPath:testBundle] load];
+        dlopen(getenv("IDE_INJECTION_PATH"), RTLD_GLOBAL);
+    }
+    NSString *testBundle = [[[NSProcessInfo processInfo] arguments] lastObject];
+    [[NSBundle bundleWithPath:testBundle] load];
 
-        FILE *outFile;
-        NSString *testDumperOutputPath = NSProcessInfo.processInfo.environment[@"TestDumperOutputPath"];
+    FILE *outFile;
+    NSString *testDumperOutputPath = NSProcessInfo.processInfo.environment[@"TestDumperOutputPath"];
 
-        if (testDumperOutputPath == nil) {
-            outFile = stdout;
-        } else {
-            outFile =  fopen(testDumperOutputPath.UTF8String, "w+");
-        }
+    if (testDumperOutputPath == nil) {
+        outFile = stdout;
+    } else {
+        outFile = fopen(testDumperOutputPath.UTF8String, "w+");
+    }
 
-        NSLog(@"Opened %@ with fd %p", testDumperOutputPath, outFile);
+    NSLog(@"Opened %@ with fd %p", testDumperOutputPath, outFile);
 
-        PrintDumpStart(outFile, testType);
-        [[XCTestSuite defaultTestSuite] printTestsWithLevel:0 withTarget: testTarget withParent: nil outputFile:outFile];
-        PrintDumpEnd(outFile, testType);
-        fclose(outFile);
-        exit(0);
-    }];
+    PrintDumpStart(outFile, testType);
+    [[XCTestSuite defaultTestSuite] printTestsWithLevel:0 withTarget: testTarget withParent: nil outputFile:outFile];
+    PrintDumpEnd(outFile, testType);
+    fclose(outFile);
+    exit(0);
 }
 
 
