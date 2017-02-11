@@ -114,16 +114,31 @@ static void PrintTestClass(FILE *outFile, NSString *testClass) {
                          @"totalDuration" : @"0"});
 }
 
+void enumerateTests();
+
 const int TEST_TARGET_LEVEL = 0;
 const int TEST_CLASS_LEVEL = 1;
 const int TEST_METHOD_LEVEL = 2;
 
+
 __attribute__((constructor))
 void initialize() {
+    NSString *testType = [NSString stringWithUTF8String: getenv("XCTEST_TYPE")];
+
+    if ([testType isEqualToString: @"APPTEST"]) {
+        [[NSNotificationCenter defaultCenter] addObserverForName:UIApplicationDidFinishLaunchingNotification object:nil queue:nil usingBlock:^(NSNotification * _Nonnull note) {
+            enumerateTests();
+        }];
+    } else {
+        enumerateTests();
+    }
+}
+
+
+void enumerateTests() {
     XCTestConfiguration *config = [[XCTestConfiguration alloc] init];
     NSString *testType = [NSString stringWithUTF8String: getenv("XCTEST_TYPE")];
     NSString *testTarget = [NSString stringWithUTF8String: getenv("XCTEST_TARGET")];
-
 
     if ([testType isEqualToString: @"APPTEST"]) {
         config.testBundleURL = [NSURL fileURLWithPath:NSProcessInfo.processInfo.environment[@"XCInjectBundle"]];
@@ -146,11 +161,11 @@ void initialize() {
 
     FILE *outFile;
     NSString *testDumperOutputPath = NSProcessInfo.processInfo.environment[@"TestDumperOutputPath"];
-    
+
     if (testDumperOutputPath == nil) {
         outFile = stdout;
     } else {
-        outFile =  fopen(testDumperOutputPath.UTF8String, "w+");
+        outFile = fopen(testDumperOutputPath.UTF8String, "w+");
     }
 
     NSLog(@"Opened %@ with fd %p", testDumperOutputPath, outFile);
@@ -161,6 +176,7 @@ void initialize() {
     fclose(outFile);
     exit(0);
 }
+
 
 // This test enumerates the Xctest classes and targets, in the json-stream format. We only enumerate the first test method,
 // since xcknife does use test method level information (ref: https://github.com/square/xcknife)
