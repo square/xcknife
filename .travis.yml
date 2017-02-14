@@ -2,8 +2,12 @@ language: objective-c
 sudo: true
 matrix:
   include:
-      - os: osx
-        osx_image: xcode8
+    - os: osx
+      osx_image: xcode8
+    - os: osx
+      osx_image: xcode8.1
+    - os: osx
+      osx_image: xcode8.2
 
 before_script:
   - export LANG=en_US.UTF-8
