@@ -10,4 +10,4 @@ before_script:
 install: bundle
 script:
   - git submodule update --init --recursive
-  - bundle exec rake spec
+  - bundle exec rake build_test_dumper spec
