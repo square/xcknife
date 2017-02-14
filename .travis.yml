@@ -9,5 +9,6 @@ before_script:
   - export LANG=en_US.UTF-8
 install: bundle
 script:
+  - csrutil status
   - git submodule update --init --recursive
   - bundle exec rake build_test_dumper spec
