@@ -1,4 +1,5 @@
 #!/bin/bash
+rm -rf TestDumper.dylib testdumperbuild
 xcodebuild -project TestDumper.xcodeproj \
     -configuration Release \
     -derivedDataPath testdumperbuild \
