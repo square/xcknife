@@ -45,7 +45,7 @@ module XCKnife
         if Dir.entries(@temporary_output_folder).any? { |f| File.file?(File.join(@temporary_output_folder,f)) }
           puts "Warning: #{@temporary_output_folder} is not empty! Files can be overwritten."
         end
-        list_tests(extra_environment_variables, helper, @temporary_output_folder, output_fd)
+        list_tests(extra_environment_variables, helper, File.absolute_path(@temporary_output_folder), output_fd)
       end
       output_fd.close
       puts "Done listing test methods"
@@ -206,6 +206,7 @@ module XCKnife
       )
       env.merge!(simctl_child_attrs(extra_environment_variables))
       inject_vars(env, test_host)
+      FileUtils.remove(outpath) if File.exists?(outpath)
       logger.info { "Temporary TestDumper file for #{test_bundle_name} is #{outpath}" }
       if is_logic_test
         run_logic_test(env, test_host, test_bundle_path)
