@@ -120,9 +120,16 @@ const int TEST_TARGET_LEVEL = 0;
 const int TEST_CLASS_LEVEL = 1;
 const int TEST_METHOD_LEVEL = 2;
 
-
 __attribute__((constructor))
 void initialize() {
+    NSLog(@"Starting TestDumper");
+    NSString *testDumperOutputPath = NSProcessInfo.processInfo.environment[@"TestDumperOutputPath"];
+    NSFileManager *fileManager = [NSFileManager defaultManager];
+
+    if ([fileManager fileExistsAtPath:testDumperOutputPath]) {
+        NSLog(@"File already exists %@. Stopping", testDumperOutputPath);
+        exit(0);
+    }
     NSString *testType = [NSString stringWithUTF8String: getenv("XCTEST_TYPE")];
 
     if ([testType isEqualToString: @"APPTEST"]) {
@@ -169,6 +176,10 @@ void enumerateTests() {
     }
 
     NSLog(@"Opened %@ with fd %p", testDumperOutputPath, outFile);
+    if (outFile == NULL) {
+        NSLog(@"File already exists %@. Stopping", testDumperOutputPath);
+        exit(0);
+    }
 
     PrintDumpStart(outFile, testType);
     [[XCTestSuite defaultTestSuite] printTestsWithLevel:0 withTarget: testTarget withParent: nil outputFile:outFile];
@@ -192,6 +203,9 @@ void enumerateTests() {
                 break;
             case TEST_METHOD_LEVEL:
                 PrintTestClass(outputFile, parent);
+                break;
+            case TEST_CLASS_LEVEL:
+                // nothing to do here
                 break;
             default:
                 NSLog(@"Uknown level %ld", level);

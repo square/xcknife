@@ -1,7 +1,7 @@
 #!/bin/bash
 rm -rf TestDumper.dylib testdumperbuild
 xcodebuild -project TestDumper.xcodeproj \
-    -configuration Release \
+    -configuration Debug \
     -derivedDataPath testdumperbuild \
     -scheme TestDumper \
-    -sdk iphonesimulator build
+    -sdk iphonesimulator build ONLY_ACTIVE_ARCH=NO

@@ -11,7 +11,7 @@ task :build_test_dumper do
   target_dir = File.join(File.dirname(__FILE__), "TestDumper")
   Dir.chdir(target_dir) do
     system "./build.sh"
-    FileUtils.copy_file("./testdumperbuild/Build/Products/Release-iphonesimulator/TestDumper.framework/TestDumper", "./TestDumper.dylib")
+    FileUtils.copy_file("./testdumperbuild/Build/Products/Debug-iphonesimulator/TestDumper.framework/TestDumper", "./TestDumper.dylib")
     puts "TestDumper.dylib was created successfully"
   end
 end
