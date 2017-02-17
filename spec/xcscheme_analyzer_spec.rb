@@ -1,12 +1,16 @@
 require 'spec_helper'
 
 describe XCKnife::XcschemeAnalyzer do
-  let(:scheme) do
+  include XCKnife::XcschemeAnalyzer
+
+  def scheme(shouldUseLaunchSchemeArgsEnv = true)
+    option_str = shouldUseLaunchSchemeArgsEnv ? "YES" : "NO"
     <<eof
 <?xml version="1.0" encoding="UTF-8"?>
 <Scheme
    LastUpgradeVersion = "0720"
    version = "1.3">
+   <TestAction shouldUseLaunchSchemeArgsEnv="#{option_str}"/>
    <LaunchAction>
       <EnvironmentVariables>
          <EnvironmentVariable
@@ -24,17 +28,27 @@ describe XCKnife::XcschemeAnalyzer do
       </AdditionalOptions>
    </LaunchAction>
 </Scheme>
-
 eof
   end
 
+  def scheme_shouldUseLaunchSchemeArgsEnv_equals_to_NO
+    scheme(false)
+  end
+
+
   it "can parse xcscheme files with EnvironmentVariables" do
-    attrs = XCKnife::XcschemeAnalyzer.extract_environment_variables(scheme)
+    attrs = extract_environment_variables(scheme)
     expect(attrs).to eq("ENABLED_FLAG" => "1")
   end
 
-  it "will return empty hash if no EnvironmentVariables are listed" do
-    attrs = XCKnife::XcschemeAnalyzer.extract_environment_variables("<Scheme></Scheme>")
+  it "ignores xcscheme EnvironmentVariables if shouldUseLaunchSchemeArgsEnv is NO" do
+    attrs = extract_environment_variables(scheme_shouldUseLaunchSchemeArgsEnv_equals_to_NO)
     expect(attrs).to eq({})
   end
+
+  it "will return empty hash if no EnvironmentVariables are listed" do
+    attrs = extract_environment_variables("<Scheme></Scheme>")
+    expect(attrs).to eq({})
+  end
+
 end
