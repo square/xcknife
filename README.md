@@ -18,7 +18,7 @@ More information on XCKnife, go [here](https://corner.squareup.com/2016/06/xckni
 ## Using as command line tool
  
 ```
-$ xcknife -h
+$ xcknife --help
 Usage: xcknife [options] worker-count historical-timings-json-stream-file [current-tests-json-stream-file]
     -p, --partition TARGETS          Comma separated list of targets. Can be used multiple times
     -o, --output FILENAME            Output file. Defaults to STDOUT
