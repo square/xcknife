@@ -24,17 +24,18 @@ module XCKnife
 
     class PartitionResult
       TimeImbalances = Struct.new :partition_set, :partitions
-      attr_reader :stats, :test_maps, :test_times, :total_test_time, :test_time_imbalances
+      attr_reader :stats, :test_maps, :test_times, :total_test_time, :test_time_imbalances, :test_time_for_partitions
       extend Forwardable
       delegate ResultStats.members => :@stats
 
-      def initialize(stats, partition_sets)
+      def initialize(stats, partition_sets, test_time_for_partitions)
         @stats = stats
         @partition_sets = partition_sets
         @test_maps = partition_sets_map(&:test_time_map)
         @test_times = partition_sets_map(&:total_time)
         @total_test_time = test_times.flatten.inject(:+)
         @test_time_imbalances = compute_test_time_imbalances
+        @test_time_for_partitions = test_time_for_partitions.inject(&:merge)
       end
 
       private
@@ -75,7 +76,7 @@ module XCKnife
     def compute_shards_for_partitions(test_time_for_partitions)
       PartitionResult.new(@stats, split_machines_proportionally(test_time_for_partitions).map do |partition|
         compute_single_shards(partition.number_of_shards, partition.test_time_map)
-      end)
+      end, test_time_for_partitions)
     end
 
     def test_time_for_partitions(historical_events, current_events = nil)
@@ -125,7 +126,7 @@ module XCKnife
       partition_with_machines_list
     end
 
-    # Computes  a 2-aproximation to the optimal partition_time, which is an instance of the Open shop scheduling problem (which is NP-hard)
+    # Computes a 2-aproximation to the optimal partition_time, which is an instance of the Open shop scheduling problem (which is NP-hard)
     # see: https://en.wikipedia.org/wiki/Open-shop_scheduling
     def compute_single_shards(number_of_shards, test_time_map)
       raise XCKnife::XCKnifeError, "There are not enough workers provided" if number_of_shards <= 0
