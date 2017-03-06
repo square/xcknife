@@ -329,16 +329,6 @@ describe XCKnife::StreamParser do
         "-skip-testing:TargetOnPartition2/TestClass3"],
         ["-skip-testing:TargetOnPartition1",
           "-skip-testing:TargetOnPartition2/TestClass2"]]])
-
-    expect(result.test_maps).to eq([[{ "TargetOnPartition1" => ["TestClass1"] }],
-      [{ "TargetOnPartition2" => ["TestClass2"] },
-        { "TargetOnPartition2" => ["TestClass3"] }]])
-    expect(result.test_times).to eq [[1000], [4000, 4000]]
-    expect(result.total_test_time).to eq 9000
-    expect(result.test_time_imbalances.to_h).to eq({
-      partition_set: [0.4, 1.6],
-      partitions: [[1.0], [1.0, 1.0]]
-    })
   end
 
   it "can compute for only one partition set" do
