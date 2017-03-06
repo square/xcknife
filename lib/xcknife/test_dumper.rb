@@ -279,7 +279,7 @@ module XCKnife
     end
 
     def redirect_output
-      return '' unless @debug
+      return '' if @debug
       ' 2> /dev/null'
     end
 
