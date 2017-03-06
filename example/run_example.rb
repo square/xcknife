@@ -26,6 +26,7 @@ def run(historical_file, current_file)
     partition_set.each do |partition|
       puts "target name for worker #{shard_number} = #{target_name}"
       puts "only is: #{xctool_only_arguments(partition).inspect}"
+      puts "skip-only is: #{xcodebuild_skip_arguments(partition, result.test_time_for_partitions).inspect}"
       shard_number += 1
     end
   end

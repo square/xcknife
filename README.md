@@ -20,9 +20,10 @@ More information on XCKnife, go [here](https://corner.squareup.com/2016/06/xckni
 ```
 $ xcknife --help
 Usage: xcknife [options] worker-count historical-timings-json-stream-file [current-tests-json-stream-file]
-    -p, --partition TARGETS          Comma separated list of targets. Can be used multiple times
+    -p, --partition TARGETS          Comma separated list of targets. Can be used multiple times.
     -o, --output FILENAME            Output file. Defaults to STDOUT
     -a, --abbrev                     Results are abbreviated
+    -x, --xcodebuild-output          Output is formatted for xcodebuild
     -h, --help                       Show this message
 ```
 
@@ -68,7 +69,7 @@ This will balance the tests onthe `iPhoneTestTarget` into 3 machines. The output
         }]}]}
 ```
 
-This provides a lot of data about the partitions and their imabalances (both internal to the partition sets, and amongst them).
+This provides a lot of data about the partitions and their imbalances (both internal to the partition sets, and amongst them).
 
 If you only want the *-only* arguments, run with the `-a` flag:
 

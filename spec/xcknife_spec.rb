@@ -1,6 +1,8 @@
 require 'spec_helper'
 
 describe XCKnife::StreamParser do
+  include XCKnife::XCToolCmdHelper
+
   context 'test_time_for_partitions' do
     subject { XCKnife::StreamParser.new(2, [["TestTarget1"], ["TestTarget2"]]) }
 
@@ -303,6 +305,30 @@ describe XCKnife::StreamParser do
       partition_set: [0.4, 1.6],
       partitions: [[1.0], [1.0, 1.0]]
     })
+  end
+
+  it "can also use xcode 8 argument only-list and skip-list" do
+    stream_parser = XCKnife::StreamParser.new(3, [["TargetOnPartition1"], ["TargetOnPartition2"]])
+    result = stream_parser.compute_shards_for_partitions([{ "TargetOnPartition1" => { "TestClass1" => 1000 } },
+      { "TargetOnPartition2" => { "TestClass2" => 4000, "TestClass3" => 4000 } }])
+
+    skip_arguments = result.test_maps.map do |partition_set|
+      partition_set.map { |partition| xcodebuild_skip_arguments(partition, result.test_time_for_partitions) }
+    end
+
+    only_arguments = result.test_maps.map do |partition_set|
+      partition_set.map { |partition| xcodebuild_only_arguments(partition) }
+    end
+
+    expect(only_arguments).to eq([[["-only-testing:TargetOnPartition1/TestClass1"]],
+      [["-only-testing:TargetOnPartition2/TestClass2"],
+        ["-only-testing:TargetOnPartition2/TestClass3"]]])
+
+    expect(skip_arguments).to eq([[["-skip-testing:TargetOnPartition2"]],
+      [["-skip-testing:TargetOnPartition1",
+        "-skip-testing:TargetOnPartition2/TestClass3"],
+        ["-skip-testing:TargetOnPartition1",
+          "-skip-testing:TargetOnPartition2/TestClass2"]]])
   end
 
   it "can compute for only one partition set" do
