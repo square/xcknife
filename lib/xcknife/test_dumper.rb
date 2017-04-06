@@ -166,14 +166,14 @@ module XCKnife
       xctestrun_as_json = `plutil -convert json -o - "#{xctestrun_file}"`
       FileUtils.mkdir_p(list_folder)
       JSON.load(xctestrun_as_json).map do |test_bundle_name, test_bundle|
-        test_specification = list_tests_wiht_simctl(list_folder, test_bundle, test_bundle_name, extra_environment_variables)
+        test_specification = list_tests_with_simctl(list_folder, test_bundle, test_bundle_name, extra_environment_variables)
         wait_test_dumper_completion(test_specification.json_stream_file)
         test_specification
       end
     end
 
     private
-    def list_tests_wiht_simctl(list_folder, test_bundle, test_bundle_name, extra_environment_variables)
+    def list_tests_with_simctl(list_folder, test_bundle, test_bundle_name, extra_environment_variables)
       env_variables = test_bundle["EnvironmentVariables"]
       testing_env_variables = test_bundle["TestingEnvironmentVariables"]
       outpath = "#{list_folder}/#{test_bundle_name}"
