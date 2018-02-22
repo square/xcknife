@@ -1,5 +1,5 @@
 require 'rspec/core/rake_task'
-require "bundler/gem_tasks"
+require 'sq/gem_tasks'
 require 'fileutils'
 
 RSpec::Core::RakeTask.new(:spec)
@@ -20,3 +20,4 @@ desc "Release wih test_dumper"
 task :gem_release => [:build_test_dumper, :build] do
   system 'gem push pkg/xcknife-*.gem'
 end
+

@@ -17,9 +17,6 @@ Gem::Specification.new do |s|
     Works by leveraging xctool's json-streams timing and test data.
   DESCRIPTION
 
-  # Only allow gem to be pushed to https://rubygems.org
-  s.metadata["allowed_push_host"] = 'https://rubygems.org'
-
   s.files         = `git ls-files`.split($INPUT_RECORD_SEPARATOR).reject { |f| f =~ /^spec/} + ["TestDumper/TestDumper.dylib"]
   s.bindir        = 'bin'
   s.executables      = ['xcknife', 'xcknife-min', 'xcknife-test-dumper']
