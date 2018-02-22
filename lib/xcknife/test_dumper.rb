@@ -247,8 +247,11 @@ module XCKnife
     end
 
     def install_app(test_host_path)
-      until system("#{simctl} install #{@device_id} '#{test_host_path}'")
-        sleep 0.1
+      # TODO: Check stdout explicitly for "domain=NSMachErrorDomain, code=-308" instead of using gtimeout
+      until system("gtimeout 20 #{simctl} install #{@device_id} '#{test_host_path}'")
+        system("#{simctl} shutdown #{@device_id}")
+        system("#{simctl} boot #{@device_id}")
+        sleep 1.0
       end
     end
 
