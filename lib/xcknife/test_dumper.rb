@@ -247,7 +247,7 @@ module XCKnife
     end
 
     def install_app(test_host_path)
-      until system("gtimeout 5 #{simctl} install #{@device_id} '#{test_host_path}'")
+      until system("gtimeout 25 #{simctl} install #{@device_id} '#{test_host_path}'")
         system("#{simctl} shutdown #{@device_id}")
         system("#{simctl} boot #{@device_id}")
         sleep 1.0
