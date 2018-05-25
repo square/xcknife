@@ -247,7 +247,9 @@ module XCKnife
     end
 
     def install_app(test_host_path)
-      until system("gtimeout 25 #{simctl} install #{@device_id} '#{test_host_path}'")
+      retries_count = 0
+      until (retries_count > 3) or system("gtimeout 45 #{simctl} install #{@device_id} '#{test_host_path}'")
+        retries_count += 1
         system("#{simctl} shutdown #{@device_id}")
         system("#{simctl} boot #{@device_id}")
         sleep 1.0
