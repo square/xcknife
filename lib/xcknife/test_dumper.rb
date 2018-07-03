@@ -5,6 +5,7 @@ require 'tmpdir'
 require 'ostruct'
 require 'set'
 require 'logger'
+require 'xcknife/exceptions'
 
 module XCKnife
   class TestDumper
@@ -38,8 +39,7 @@ module XCKnife
         end
       else
         unless File.directory?(@temporary_output_folder)
-          puts "Error no such directory: #{@temporary_output_folder}"
-          exit 1
+          raise TestDumpError, "Error no such directory: #{@temporary_output_folder}"
         end
 
         if Dir.entries(@temporary_output_folder).any? { |f| File.file?(File.join(@temporary_output_folder,f)) }
@@ -62,8 +62,7 @@ module XCKnife
     def parse_scheme_file
       return {} unless @xcscheme_file
       unless File.exists?(@xcscheme_file)
-        puts "Error: no such xcscheme file: #{@xcscheme_file}"
-        exit 1
+        raise ArgumentError, "Error: no such xcscheme file: #{@xcscheme_file}"
       end
       XCKnife::XcschemeAnalyzer.extract_environment_variables(IO.read(@xcscheme_file))
     end
@@ -113,8 +112,7 @@ module XCKnife
     end
 
     def warn_and_exit(msg)
-      warn "#{msg.to_s.capitalize} \n\n#{@parser}"
-      exit 1
+      raise TestDumpError, "#{msg.to_s.capitalize} \n\n#{@parser}"
     end
 
     def concat_to_file(test_specification, output_fd)
@@ -160,8 +158,7 @@ module XCKnife
       @testroot = "#{derived_data_folder}/Build/Products/"
       xctestrun_file = Dir["#{@testroot}/*.xctestrun"].first
       if xctestrun_file.nil?
-        puts "No xctestrun on #{@testroot}"
-        exit 1
+        raise ArgumentError, "No xctestrun on #{@testroot}"
       end
       xctestrun_as_json = `plutil -convert json -o - "#{xctestrun_file}"`
       FileUtils.mkdir_p(list_folder)
@@ -181,8 +178,7 @@ module XCKnife
       test_bundle_path = replace_vars(test_bundle["TestBundlePath"], test_host)
       test_dumper_path = File.expand_path(File.join(File.dirname(__FILE__), '..', '..', 'TestDumper', 'TestDumper.dylib'))
       unless File.exist?(test_dumper_path)
-        warn "Could not find TestDumpber.dylib on #{test_dumper_path}"
-        exit 1
+        raise TestDumpError, "Could not find TestDumper.dylib on #{test_dumper_path}"
       end
 
       is_logic_test = test_bundle["TestHostBundleIdentifier"].nil?
@@ -261,8 +257,7 @@ module XCKnife
       until has_test_dumper_terminated?(file)  do
         retries_count += 1
         if retries_count == @max_retry_count
-          puts "Timeout error on: #{file}"
-          exit 1
+          raise TestDumpError, "Timeout error on: #{file}"
         end
         sleep 0.1
       end
