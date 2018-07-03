@@ -266,7 +266,7 @@ module XCKnife
     def has_test_dumper_terminated?(file)
       return false unless File.exists?(file)
       last_line = `tail -n 1 "#{file}"`
-      return /Completed Test Dumper/.match(last_line)
+      return last_line.include?("Completed Test Dumper")
     end
 
     def run_apptest(env, test_host_bundle_identifier, test_bundle_path)
