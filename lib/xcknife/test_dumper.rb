@@ -255,6 +255,10 @@ module XCKnife
         call_simctl ['boot', @device_id], timeout: shutdown_boot_timeout
         sleep 1.0
       end
+
+      if retries_count > max_retry_count
+        raise TestDumpError, "Installing #{test_host_path} failed"
+      end
     end
 
     def wait_test_dumper_completion(file)
@@ -275,12 +279,16 @@ module XCKnife
     end
 
     def run_apptest(env, test_host_bundle_identifier, test_bundle_path)
-      call_simctl(["launch", @device_id, test_host_bundle_identifier, '-XCTest', 'All', test_bundle_path], env: env, timeout: '5m')
+      unless call_simctl(["launch", @device_id, test_host_bundle_identifier, '-XCTest', 'All', test_bundle_path], env: env, timeout: '5m')
+        raise TestDumpError, "Launching #{test_bundle_path} in #{test_host_bundle_identifier} failed"
+      end
     end
 
     def run_logic_test(env, test_host, test_bundle_path)
       opts = @debug ? {} : { err: "/dev/null" }
-      call_simctl(["spawn", @device_id, test_host, '-XCTest', 'All', test_bundle_path], env: env, timeout: '5m', **opts)
+      unless call_simctl(["spawn", @device_id, test_host, '-XCTest', 'All', test_bundle_path], env: env, timeout: '5m', **opts)
+        raise TestDumpError, "Spawning #{test_bundle_path} in #{test_host} failed"
+      end
     end
 
     def call_simctl(args, env: {}, timeout: nil, **spawn_opts)
