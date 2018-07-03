@@ -58,7 +58,7 @@ describe "Test Dumper Acceptance" do
       derived_data = File.join(xcknife_exemplar_path, "derivedDataPath")
       outpath = "#{__FILE__}.out.tmp"
       File.unlink(outpath) if File.exists?(outpath)
-      XCKnife::TestDumper.new([derived_data, outpath]).run
+      expect { XCKnife::TestDumper.new([derived_data, outpath]).run }.not_to raise_error
       expect(IO.read(outpath).lines.to_set).to eq(EXPECTED_OUTPUT.lines.to_set)
     end
   end
