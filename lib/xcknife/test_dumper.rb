@@ -144,9 +144,9 @@ module XCKnife
     def initialize(device_id, max_retry_count, debug, logger)
       @xcode_path = `xcode-select -p`.strip
       @simctl_path = `xcrun -f simctl`.strip
-      @platforms_path = "#{@xcode_path}/Platforms/"
-      @platform_path = "#{@platforms_path}/iPhoneSimulator.platform"
-      @sdk_path = "#{@platform_path}/Developer/SDKs/iPhoneSimulator.sdk"
+      @platforms_path = File.join(@xcode_path, "Platforms")
+      @platform_path = File.join(@platforms_path, "iPhoneSimulator.platform")
+      @sdk_path = File.join(@platform_path, "Developer/SDKs/iPhoneSimulator.sdk")
       @testroot = nil
       @device_id = device_id
       @max_retry_count = max_retry_count
@@ -155,8 +155,8 @@ module XCKnife
     end
 
     def call(derived_data_folder, list_folder, extra_environment_variables = {})
-      @testroot = "#{derived_data_folder}/Build/Products/"
-      xctestrun_file = Dir["#{@testroot}/*.xctestrun"].first
+      @testroot = File.join(derived_data_folder, 'Build', 'Products')
+      xctestrun_file = Dir[File.join(@testroot, '*.xctestrun')].first
       if xctestrun_file.nil?
         raise ArgumentError, "No xctestrun on #{@testroot}"
       end
@@ -173,7 +173,7 @@ module XCKnife
     def list_tests_with_simctl(list_folder, test_bundle, test_bundle_name, extra_environment_variables)
       env_variables = test_bundle["EnvironmentVariables"]
       testing_env_variables = test_bundle["TestingEnvironmentVariables"]
-      outpath = "#{list_folder}/#{test_bundle_name}"
+      outpath = File.join(list_folder, test_bundle_name)
       test_host = replace_vars(test_bundle["TestHostPath"])
       test_bundle_path = replace_vars(test_bundle["TestBundlePath"], test_host)
       test_dumper_path = File.expand_path(File.join(File.dirname(__FILE__), '..', '..', 'TestDumper', 'TestDumper.dylib'))
@@ -202,7 +202,7 @@ module XCKnife
       )
       env.merge!(simctl_child_attrs(extra_environment_variables))
       inject_vars(env, test_host)
-      FileUtils.remove(outpath) if File.exists?(outpath)
+      FileUtils.rm_f(outpath)
       logger.info { "Temporary TestDumper file for #{test_bundle_name} is #{outpath}" }
       if is_logic_test
         run_logic_test(env, test_host, test_bundle_path)
