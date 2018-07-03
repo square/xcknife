@@ -5,6 +5,7 @@ require 'tmpdir'
 require 'ostruct'
 require 'set'
 require 'logger'
+require 'shellwords'
 require 'xcknife/exceptions'
 
 module XCKnife
@@ -243,11 +244,15 @@ module XCKnife
     end
 
     def install_app(test_host_path)
+      install_timeout = '45s'
+      shutdown_boot_timeout = '45s'
+
       retries_count = 0
-      until (retries_count > 3) or system("gtimeout 45 #{simctl} install #{@device_id} '#{test_host_path}'")
+      max_retry_count = 3
+      until (retries_count > max_retry_count) or call_simctl(["install", @device_id, test_host_path], timeout: install_timeout)
         retries_count += 1
-        system("#{simctl} shutdown #{@device_id}")
-        system("#{simctl} boot #{@device_id}")
+        call_simctl ['shutdown', @device_id], timeout: shutdown_boot_timeout
+        call_simctl ['boot', @device_id], timeout: shutdown_boot_timeout
         sleep 1.0
       end
     end
@@ -270,25 +275,25 @@ module XCKnife
     end
 
     def run_apptest(env, test_host_bundle_identifier, test_bundle_path)
-      call_simctl env, "launch #{@device_id} '#{test_host_bundle_identifier}' -XCTest All '#{test_bundle_path}'"
+      call_simctl(["launch", @device_id, test_host_bundle_identifier, '-XCTest', 'All', test_bundle_path], env: env, timeout: '5m')
     end
 
     def run_logic_test(env, test_host, test_bundle_path)
-      call_simctl env, "spawn #{@device_id} '#{test_host}' -XCTest All '#{test_bundle_path}'#{redirect_output}"
+      opts = @debug ? {} : { err: "/dev/null" }
+      call_simctl(["spawn", @device_id, test_host, '-XCTest', 'All', test_bundle_path], env: env, timeout: '5m', **opts)
     end
 
-    def redirect_output
-      return '' if @debug
-      ' 2> /dev/null'
-    end
-
-    def call_simctl(env, string_args)
-      cmd = "#{simctl} #{string_args}"
+    def call_simctl(args, env: {}, timeout: nil, **spawn_opts)
+      gtimeout = timeout ? "gtimeout #{timeout} " : nil
+      args = [simctl] + args
+      args.insert(0, 'gtimeout', timeout.to_s) if timeout
+      cmd = Shellwords.shelljoin(args)
       puts "Running:\n$ #{cmd}"
       logger.info { "Environment variables:\n #{env.pretty_print_inspect}" }
-      unless system(env, cmd)
-        puts "Simctl errored with the following env:\n #{env.pretty_print_inspect}"
-      end
+
+      ret = system(env, *args, **spawn_opts)
+      puts "Simctl errored with the following env:\n #{env.pretty_print_inspect}" unless ret
+      ret
     end
   end
 end
