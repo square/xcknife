@@ -5,6 +5,7 @@ require 'tmpdir'
 require 'ostruct'
 require 'set'
 require 'logger'
+require 'shellwords'
 require 'xcknife/exceptions'
 
 module XCKnife
@@ -144,9 +145,9 @@ module XCKnife
     def initialize(device_id, max_retry_count, debug, logger)
       @xcode_path = `xcode-select -p`.strip
       @simctl_path = `xcrun -f simctl`.strip
-      @platforms_path = "#{@xcode_path}/Platforms/"
-      @platform_path = "#{@platforms_path}/iPhoneSimulator.platform"
-      @sdk_path = "#{@platform_path}/Developer/SDKs/iPhoneSimulator.sdk"
+      @platforms_path = File.join(@xcode_path, "Platforms")
+      @platform_path = File.join(@platforms_path, "iPhoneSimulator.platform")
+      @sdk_path = File.join(@platform_path, "Developer/SDKs/iPhoneSimulator.sdk")
       @testroot = nil
       @device_id = device_id
       @max_retry_count = max_retry_count
@@ -155,8 +156,8 @@ module XCKnife
     end
 
     def call(derived_data_folder, list_folder, extra_environment_variables = {})
-      @testroot = "#{derived_data_folder}/Build/Products/"
-      xctestrun_file = Dir["#{@testroot}/*.xctestrun"].first
+      @testroot = File.join(derived_data_folder, 'Build', 'Products')
+      xctestrun_file = Dir[File.join(@testroot, '*.xctestrun')].first
       if xctestrun_file.nil?
         raise ArgumentError, "No xctestrun on #{@testroot}"
       end
@@ -173,7 +174,7 @@ module XCKnife
     def list_tests_with_simctl(list_folder, test_bundle, test_bundle_name, extra_environment_variables)
       env_variables = test_bundle["EnvironmentVariables"]
       testing_env_variables = test_bundle["TestingEnvironmentVariables"]
-      outpath = "#{list_folder}/#{test_bundle_name}"
+      outpath = File.join(list_folder, test_bundle_name)
       test_host = replace_vars(test_bundle["TestHostPath"])
       test_bundle_path = replace_vars(test_bundle["TestBundlePath"], test_host)
       test_dumper_path = File.expand_path(File.join(File.dirname(__FILE__), '..', '..', 'TestDumper', 'TestDumper.dylib'))
@@ -202,7 +203,7 @@ module XCKnife
       )
       env.merge!(simctl_child_attrs(extra_environment_variables))
       inject_vars(env, test_host)
-      FileUtils.remove(outpath) if File.exists?(outpath)
+      FileUtils.rm_f(outpath)
       logger.info { "Temporary TestDumper file for #{test_bundle_name} is #{outpath}" }
       if is_logic_test
         run_logic_test(env, test_host, test_bundle_path)
@@ -243,12 +244,20 @@ module XCKnife
     end
 
     def install_app(test_host_path)
+      install_timeout = '45s'
+      shutdown_boot_timeout = '45s'
+
       retries_count = 0
-      until (retries_count > 3) or system("gtimeout 45 #{simctl} install #{@device_id} '#{test_host_path}'")
+      max_retry_count = 3
+      until (retries_count > max_retry_count) or call_simctl(["install", @device_id, test_host_path], timeout: install_timeout)
         retries_count += 1
-        system("#{simctl} shutdown #{@device_id}")
-        system("#{simctl} boot #{@device_id}")
+        call_simctl ['shutdown', @device_id], timeout: shutdown_boot_timeout
+        call_simctl ['boot', @device_id], timeout: shutdown_boot_timeout
         sleep 1.0
+      end
+
+      if retries_count > max_retry_count
+        raise TestDumpError, "Installing #{test_host_path} failed"
       end
     end
 
@@ -266,29 +275,33 @@ module XCKnife
     def has_test_dumper_terminated?(file)
       return false unless File.exists?(file)
       last_line = `tail -n 1 "#{file}"`
-      return /Completed Test Dumper/.match(last_line)
+      return last_line.include?("Completed Test Dumper")
     end
 
     def run_apptest(env, test_host_bundle_identifier, test_bundle_path)
-      call_simctl env, "launch #{@device_id} '#{test_host_bundle_identifier}' -XCTest All '#{test_bundle_path}'"
+      unless call_simctl(["launch", @device_id, test_host_bundle_identifier, '-XCTest', 'All', test_bundle_path], env: env, timeout: '5m')
+        raise TestDumpError, "Launching #{test_bundle_path} in #{test_host_bundle_identifier} failed"
+      end
     end
 
     def run_logic_test(env, test_host, test_bundle_path)
-      call_simctl env, "spawn #{@device_id} '#{test_host}' -XCTest All '#{test_bundle_path}'#{redirect_output}"
+      opts = @debug ? {} : { err: "/dev/null" }
+      unless call_simctl(["spawn", @device_id, test_host, '-XCTest', 'All', test_bundle_path], env: env, timeout: '5m', **opts)
+        raise TestDumpError, "Spawning #{test_bundle_path} in #{test_host} failed"
+      end
     end
 
-    def redirect_output
-      return '' if @debug
-      ' 2> /dev/null'
-    end
-
-    def call_simctl(env, string_args)
-      cmd = "#{simctl} #{string_args}"
+    def call_simctl(args, env: {}, timeout: nil, **spawn_opts)
+      gtimeout = timeout ? "gtimeout #{timeout} " : nil
+      args = [simctl] + args
+      args.insert(0, 'gtimeout', timeout.to_s) if timeout
+      cmd = Shellwords.shelljoin(args)
       puts "Running:\n$ #{cmd}"
       logger.info { "Environment variables:\n #{env.pretty_print_inspect}" }
-      unless system(env, cmd)
-        puts "Simctl errored with the following env:\n #{env.pretty_print_inspect}"
-      end
+
+      ret = system(env, *args, **spawn_opts)
+      puts "Simctl errored with the following env:\n #{env.pretty_print_inspect}" unless ret
+      ret
     end
   end
 end
