@@ -1,6 +1,6 @@
 module XCKnife
   # Base error class for xcknife
-  XCKnifeError = Class.new(StandardError)
+  XCKnifeError = Class.new(RuntimeError)
 
   TestDumpError = Class.new(XCKnifeError)
 
