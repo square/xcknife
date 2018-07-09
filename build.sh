@@ -1,7 +1,7 @@
 #!/bin/bash
 rm -rf derivedDataPath
 
-XC_DESTINATION='platform=iOS Simulator,name=iPad Air,OS=9.2'
+XC_DESTINATION='platform=iOS Simulator,name=iPad Air,OS=11.2'
 
 xcodebuild -project XCKnifeExemplar.xcodeproj \
     -configuration Debug \
