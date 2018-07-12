@@ -71,6 +71,38 @@
 
 #include <dlfcn.h>
 
+// Logging
+FILE *logFile;
+
+void initializeLogFile(char *logFilePath)
+{
+    logFile = fopen(logFilePath, "w");
+}
+
+void logDebug(NSString *msg)
+{
+    assert(logFile);
+    fprintf(logFile, "%s", msg.UTF8String);
+    fprintf(logFile, "\n");
+    
+    NSLog(@"%@", msg);
+}
+
+void logInit()
+{
+    logDebug(@"Starting TestDumper...");
+    logDebug(@"Environment Variables:");
+    logDebug(NSProcessInfo.processInfo.environment.description);
+    logDebug(@"Command Line Arguments:");
+    logDebug(NSProcessInfo.processInfo.arguments.description);
+    
+    logDebug(@"--------------------------------");
+}
+
+void logEnd()
+{
+    logDebug(@"EndingTestDumper...");
+}
 
 // Used for a structured log, just like Xctool's.
 // Example: https://github.com/square/xcknife/blob/master/example/xcknife-exemplar.json-stream
@@ -119,10 +151,15 @@ void enumerateTests();
 const int TEST_TARGET_LEVEL = 0;
 const int TEST_CLASS_LEVEL = 1;
 const int TEST_METHOD_LEVEL = 2;
+FILE *noteFile;
 
 __attribute__((constructor))
 void initialize() {
     NSLog(@"Starting TestDumper");
+    char *logFilePath = [[[NSProcessInfo processInfo] arguments][3] UTF8String];
+    initializeLogFile(logFilePath);
+    logInit();
+    NSString *testBundlePath = [[NSProcessInfo processInfo] arguments][4];
     NSString *testDumperOutputPath = NSProcessInfo.processInfo.environment[@"TestDumperOutputPath"];
     NSFileManager *fileManager = [NSFileManager defaultManager];
 
@@ -134,38 +171,41 @@ void initialize() {
 
     if ([testType isEqualToString: @"APPTEST"]) {
         [[NSNotificationCenter defaultCenter] addObserverForName:UIApplicationDidFinishLaunchingNotification object:nil queue:nil usingBlock:^(NSNotification * _Nonnull note) {
-            enumerateTests();
+            enumerateTests(testBundlePath);
         }];
     } else {
-        enumerateTests();
+        enumerateTests(testBundlePath);
     }
 }
 
-
-void enumerateTests() {
-    XCTestConfiguration *config = [[XCTestConfiguration alloc] init];
-    NSString *testType = [NSString stringWithUTF8String: getenv("XCTEST_TYPE")];
-    NSString *testTarget = [NSString stringWithUTF8String: getenv("XCTEST_TARGET")];
-
-    if ([testType isEqualToString: @"APPTEST"]) {
-        config.testBundleURL = [NSURL fileURLWithPath:NSProcessInfo.processInfo.environment[@"XCInjectBundle"]];
-        config.targetApplicationPath = NSProcessInfo.processInfo.environment[@"XCInjectBundleInto"];
-
-        NSString *configPath = [NSTemporaryDirectory() stringByAppendingPathComponent:[NSString stringWithFormat:@"%ul.xctestconfiguration", arc4random()]];
-
-        NSLog(@"Writing config to %@", configPath);
-
-        NSData *data = [NSKeyedArchiver archivedDataWithRootObject:config];
-
-        [data writeToFile:configPath atomically:true];
-
-        setenv("XCTestConfigurationFilePath", configPath.UTF8String, YES);
-
-        dlopen(getenv("IDE_INJECTION_PATH"), RTLD_GLOBAL);
+void enumerateTests(NSString *testBundlePath) {
+    logDebug(@"Listing all test bundles");
+    for (NSBundle *bundle in NSBundle.allBundles) {
+        NSString *string = [@"Found a test bundle named: " stringByAppendingString:bundle.bundlePath];
+        logDebug(string);
     }
-    NSString *testBundle = [[[NSProcessInfo processInfo] arguments] lastObject];
-    [[NSBundle bundleWithPath:testBundle] load];
-
+    logDebug(@"Finished listing all test bundles");
+    
+    NSBundle* testBundleObj = [NSBundle bundleWithPath:testBundlePath];
+    [testBundleObj load];
+    logDebug(@"test bundle loaded");
+    
+    logDebug(@"Listing all test bundles");
+    for (NSBundle *bundle in NSBundle.allBundles) {
+        NSString *string = [@"Found a test bundle named: " stringByAppendingString:bundle.bundlePath];
+        logDebug(string);
+    }
+    logDebug(@"Finished listing all test bundles");
+    
+    NSString *testType = [NSString stringWithUTF8String: getenv("XCTEST_TYPE")];
+    NSString *testTarget = [[[testBundlePath componentsSeparatedByString:@"/"] lastObject] componentsSeparatedByString:@"."][0];
+    
+    logDebug(@"The test target is:");
+    logDebug(testTarget);
+    if ([testType isEqualToString: @"APPTEST"]) {
+        logDebug(@"IS APPTEST");
+    }
+    
     FILE *outFile;
     NSString *testDumperOutputPath = NSProcessInfo.processInfo.environment[@"TestDumperOutputPath"];
 
@@ -177,14 +217,17 @@ void enumerateTests() {
 
     NSLog(@"Opened %@ with fd %p", testDumperOutputPath, outFile);
     if (outFile == NULL) {
+        logDebug(@"File already exists. Stopping");
         NSLog(@"File already exists %@. Stopping", testDumperOutputPath);
         exit(0);
     }
-
+    
     PrintDumpStart(outFile, testType);
-    [[XCTestSuite defaultTestSuite] printTestsWithLevel:0 withTarget: testTarget withParent: nil outputFile:outFile];
+    XCTestSuite* testSuite = [XCTestSuite defaultTestSuite];
+    [testSuite printTestsWithLevel:0 withTarget: testTarget withParent: nil outputFile:outFile];
     PrintDumpEnd(outFile, testType);
     fclose(outFile);
+    logEnd();
     exit(0);
 }
 
