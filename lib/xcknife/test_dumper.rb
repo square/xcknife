@@ -153,6 +153,7 @@ module XCKnife
       @max_retry_count = max_retry_count
       @logger = logger
       @debug = debug
+      @last_installed_test_host = nil
     end
 
     def call(derived_data_folder, list_folder, extra_environment_variables = {})
@@ -166,12 +167,23 @@ module XCKnife
       JSON.load(xctestrun_as_json).map do |test_bundle_name, test_bundle|
         test_specification = list_tests_with_simctl(list_folder, test_bundle, test_bundle_name, extra_environment_variables)
         wait_test_dumper_completion(test_specification.json_stream_file)
+        terminate_apptest(test_bundle)
         test_specification
       end
+
+=begin
+      json_obj = JSON.load(xctestrun_as_json)
+      test_bundle_name = "IOS-Builder-ExemplarTests"
+      test_bundle = json_obj[test_bundle_name]
+      test_specification = list_tests_with_simctl(list_folder, test_bundle, test_bundle_name, extra_environment_variables)
+      wait_test_dumper_completion(test_specification.json_stream_file)
+      [test_specification]
+=end
     end
 
     private
     def list_tests_with_simctl(list_folder, test_bundle, test_bundle_name, extra_environment_variables)
+      puts "DTANG_DEBUG0"
       env_variables = test_bundle["EnvironmentVariables"]
       testing_env_variables = test_bundle["TestingEnvironmentVariables"]
       outpath = File.join(list_folder, test_bundle_name)
@@ -182,6 +194,7 @@ module XCKnife
         raise TestDumpError, "Could not find TestDumper.dylib on #{test_dumper_path}"
       end
 
+      puts "DTANG_DEBUG1"
       is_logic_test = test_bundle["TestHostBundleIdentifier"].nil?
       env = simctl_child_attrs(
         "XCTEST_TYPE" => is_logic_test ? "LOGICTEST" : "APPTEST",
@@ -200,6 +213,10 @@ module XCKnife
         "DYLD_FALLBACK_LIBRARY_PATH" => "#{@sdk_path}/usr/lib",
         "DYLD_FALLBACK_FRAMEWORK_PATH" => "#{@platform_path}/Developer/Library/Frameworks",
         "DYLD_INSERT_LIBRARIES" => test_dumper_path,
+      )
+      env.merge!(
+        "DYLD_PRINT_LIBRARIES" => "YES",
+        "DYLD_PRINT_ENV" => "YES",
       )
       env.merge!(simctl_child_attrs(extra_environment_variables))
       inject_vars(env, test_host)
@@ -244,6 +261,13 @@ module XCKnife
     end
 
     def install_app(test_host_path)
+      puts "DTANG_DEBUG2"
+      #if test_host_path == @last_installed_test_host
+      #  puts "Skipping redundant install of #{test_host_path}"
+      #  return
+      #end
+
+      puts "DTANG_DEBUG3"
       retries_count = 0
       max_retry_count = 3
       until (retries_count > max_retry_count) or call_simctl(["install", @device_id, test_host_path])
@@ -256,6 +280,8 @@ module XCKnife
       if retries_count > max_retry_count
         raise TestDumpError, "Installing #{test_host_path} failed"
       end
+
+      @last_installed_test_host = test_host_path
     end
 
     def wait_test_dumper_completion(file)
@@ -277,7 +303,17 @@ module XCKnife
 
     def run_apptest(env, test_host_bundle_identifier, test_bundle_path)
       unless call_simctl(["launch", @device_id, test_host_bundle_identifier, '-XCTest', 'All', test_bundle_path], env: env)
+      #unless call_simctl(["launch", @device_id, test_host_bundle_identifier, '-XCTest', 'All', '/Users/build/.jenkins/dtang_test/test_dir/ios-builder/xcode_derived_data/iphonesimulator/Build/Products/Debug-iphonesimulator/IOS-Builder-Exemplar.app/PlugIns/IOS-Builder-ExemplarTests.xctest', '/Users/build/.jenkins/dtang_test/test_dir/ios-builder/xcode_derived_data/iphonesimulator/Build/Products/Debug-iphonesimulator/IOS-Builder-Exemplar.app/PlugIns/IOS-Builder-ExemplarTests2.xctest'], env: env)
         raise TestDumpError, "Launching #{test_bundle_path} in #{test_host_bundle_identifier} failed"
+      end
+    end
+
+    def terminate_apptest(test_bundle)
+      test_host = replace_vars(test_bundle["TestHostPath"])
+      test_bundle_path = replace_vars(test_bundle["TestBundlePath"], test_host)
+      test_host_bundle_identifier = replace_vars(test_bundle["TestHostBundleIdentifier"], test_host)
+      unless call_simctl(["terminate", @device_id, test_host_bundle_identifier])
+        raise TestDumpError, "Terminating #{test_bundle_path} in #{test_host_bundle_identifier} failed"
       end
     end
 

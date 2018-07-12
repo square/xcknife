@@ -119,9 +119,16 @@ void enumerateTests();
 const int TEST_TARGET_LEVEL = 0;
 const int TEST_CLASS_LEVEL = 1;
 const int TEST_METHOD_LEVEL = 2;
+FILE *noteFile;
 
+static void debugLog(NSString* message) {
+    fprintf(noteFile, message.UTF8String);
+    fprintf(noteFile, "\n");
+}
 __attribute__((constructor))
 void initialize() {
+    noteFile = fopen("/tmp/testdumper.log", "w");
+    fprintf(noteFile, "Starting test dumper!\n");
     NSLog(@"Starting TestDumper");
     NSString *testDumperOutputPath = NSProcessInfo.processInfo.environment[@"TestDumperOutputPath"];
     NSFileManager *fileManager = [NSFileManager defaultManager];
@@ -141,48 +148,141 @@ void initialize() {
     }
 }
 
+void enumerateTest(NSString* testBundle) {
+    NSBundle* testBundleObj = [NSBundle bundleWithPath:testBundle];
+    [testBundleObj load];
+    debugLog(@"test bundle loaded");
 
-void enumerateTests() {
-    XCTestConfiguration *config = [[XCTestConfiguration alloc] init];
-    NSString *testType = [NSString stringWithUTF8String: getenv("XCTEST_TYPE")];
-    NSString *testTarget = [NSString stringWithUTF8String: getenv("XCTEST_TARGET")];
-
-    if ([testType isEqualToString: @"APPTEST"]) {
-        config.testBundleURL = [NSURL fileURLWithPath:NSProcessInfo.processInfo.environment[@"XCInjectBundle"]];
-        config.targetApplicationPath = NSProcessInfo.processInfo.environment[@"XCInjectBundleInto"];
-
-        NSString *configPath = [NSTemporaryDirectory() stringByAppendingPathComponent:[NSString stringWithFormat:@"%ul.xctestconfiguration", arc4random()]];
-
-        NSLog(@"Writing config to %@", configPath);
-
-        NSData *data = [NSKeyedArchiver archivedDataWithRootObject:config];
-
-        [data writeToFile:configPath atomically:true];
-
-        setenv("XCTestConfigurationFilePath", configPath.UTF8String, YES);
-
-        dlopen(getenv("IDE_INJECTION_PATH"), RTLD_GLOBAL);
+    debugLog(@"Listing all test bundles");
+    for (NSBundle *bundle in NSBundle.allBundles) {
+        NSString *string = [@"Found a test bundle named: " stringByAppendingString:bundle.bundlePath];
+        debugLog(string);
     }
-    NSString *testBundle = [[[NSProcessInfo processInfo] arguments] lastObject];
-    [[NSBundle bundleWithPath:testBundle] load];
+    debugLog(@"Finished listing all test bundles");
+    
+    //XCTestConfiguration *config = [[XCTestConfiguration alloc] init];
+    NSString *testType = [NSString stringWithUTF8String: getenv("XCTEST_TYPE")];
+    //NSString *testTarget = [NSString stringWithUTF8String: getenv("XCTEST_TARGET")];
+    NSString *testTarget = [[[testBundle componentsSeparatedByString:@"/"] lastObject] componentsSeparatedByString:@"."][0];
+    
+    debugLog(@"The test target is:");
+    debugLog(testTarget);
+    if ([testType isEqualToString: @"APPTEST"]) {
+        debugLog(@"IS APPTEST");
+//        config.testBundleURL = [NSURL fileURLWithPath:NSProcessInfo.processInfo.environment[@"XCInjectBundle"]];
+//        config.targetApplicationPath = NSProcessInfo.processInfo.environment[@"XCInjectBundleInto"];
+//
+//        NSString *configPath = [NSTemporaryDirectory() stringByAppendingPathComponent:[NSString stringWithFormat:@"%ul.xctestconfiguration", arc4random()]];
+//
+//        NSLog(@"Writing config to %@", configPath);
+//
+//        NSData *data = [NSKeyedArchiver archivedDataWithRootObject:config];
+//
+//        [data writeToFile:configPath atomically:true];
+//
+//        setenv("XCTestConfigurationFilePath", configPath.UTF8String, YES);
+        
+        //dlopen(getenv("IDE_INJECTION_PATH"), RTLD_GLOBAL);
 
+        debugLog(@"not doing dlopen anymore");
+    }
+    
     FILE *outFile;
     NSString *testDumperOutputPath = NSProcessInfo.processInfo.environment[@"TestDumperOutputPath"];
-
+    
     if (testDumperOutputPath == nil) {
         outFile = stdout;
     } else {
-        outFile = fopen(testDumperOutputPath.UTF8String, "w+");
+        outFile = fopen(testDumperOutputPath.UTF8String, "a");
     }
-
+    
     NSLog(@"Opened %@ with fd %p", testDumperOutputPath, outFile);
     if (outFile == NULL) {
+        debugLog(@"output file already exists");
         NSLog(@"File already exists %@. Stopping", testDumperOutputPath);
         exit(0);
     }
-
+    
     PrintDumpStart(outFile, testType);
-    [[XCTestSuite defaultTestSuite] printTestsWithLevel:0 withTarget: testTarget withParent: nil outputFile:outFile];
+    XCTestSuite* testSuite = [XCTestSuite defaultTestSuite];
+    [testSuite printTestsWithLevel:0 withTarget: testTarget withParent: nil outputFile:outFile];
+    PrintDumpEnd(outFile, testType);
+    fclose(outFile);
+}
+
+void enumerateTests() {
+    debugLog(@"printing arguments");
+    for (NSString* argument in NSProcessInfo.processInfo.arguments) {
+        if ([argument hasSuffix:@".xctest"]) {
+            debugLog(argument);
+        }
+    }
+
+    debugLog(@"Listing all test bundles");
+    for (NSBundle *bundle in NSBundle.allBundles) {
+        NSString *string = [@"Found a test bundle named: " stringByAppendingString:bundle.bundlePath];
+        debugLog(string);
+    }
+    debugLog(@"Finished listing all test bundles");
+    
+    NSString *testBundle = [[[NSProcessInfo processInfo] arguments] lastObject];
+    NSBundle* testBundleObj = [NSBundle bundleWithPath:testBundle];
+    [testBundleObj load];
+    debugLog(@"test bundle loaded");
+    
+    debugLog(@"Listing all test bundles");
+    for (NSBundle *bundle in NSBundle.allBundles) {
+        NSString *string = [@"Found a test bundle named: " stringByAppendingString:bundle.bundlePath];
+        debugLog(string);
+    }
+    debugLog(@"Finished listing all test bundles");
+    
+    //XCTestConfiguration *config = [[XCTestConfiguration alloc] init];
+    NSString *testType = [NSString stringWithUTF8String: getenv("XCTEST_TYPE")];
+    //NSString *testTarget = [NSString stringWithUTF8String: getenv("XCTEST_TARGET")];
+    NSString *testTarget = [[[testBundle componentsSeparatedByString:@"/"] lastObject] componentsSeparatedByString:@"."][0];
+    
+    debugLog(@"The test target is:");
+    debugLog(testTarget);
+    if ([testType isEqualToString: @"APPTEST"]) {
+        debugLog(@"IS APPTEST");
+        //        config.testBundleURL = [NSURL fileURLWithPath:NSProcessInfo.processInfo.environment[@"XCInjectBundle"]];
+        //        config.targetApplicationPath = NSProcessInfo.processInfo.environment[@"XCInjectBundleInto"];
+        //
+        //        NSString *configPath = [NSTemporaryDirectory() stringByAppendingPathComponent:[NSString stringWithFormat:@"%ul.xctestconfiguration", arc4random()]];
+        //
+        //        NSLog(@"Writing config to %@", configPath);
+        //
+        //        NSData *data = [NSKeyedArchiver archivedDataWithRootObject:config];
+        //
+        //        [data writeToFile:configPath atomically:true];
+        //
+        //        setenv("XCTestConfigurationFilePath", configPath.UTF8String, YES);
+        
+        //dlopen(getenv("IDE_INJECTION_PATH"), RTLD_GLOBAL);
+        
+        debugLog(@"not doing dlopen anymore");
+    }
+    
+    FILE *outFile;
+    NSString *testDumperOutputPath = NSProcessInfo.processInfo.environment[@"TestDumperOutputPath"];
+    
+    if (testDumperOutputPath == nil) {
+        outFile = stdout;
+    } else {
+        outFile = fopen(testDumperOutputPath.UTF8String, "a");
+    }
+    
+    NSLog(@"Opened %@ with fd %p", testDumperOutputPath, outFile);
+    if (outFile == NULL) {
+        debugLog(@"output file already exists");
+        NSLog(@"File already exists %@. Stopping", testDumperOutputPath);
+        exit(0);
+    }
+    
+    PrintDumpStart(outFile, testType);
+    XCTestSuite* testSuite = [XCTestSuite defaultTestSuite];
+    [testSuite printTestsWithLevel:0 withTarget: testTarget withParent: nil outputFile:outFile];
     PrintDumpEnd(outFile, testType);
     fclose(outFile);
     exit(0);
@@ -197,6 +297,8 @@ void enumerateTests() {
 {
 
     for (XCTest *t in self.tests) {
+        debugLog(@"this is a test");
+        debugLog(t.name);
         switch (level) {
             case TEST_TARGET_LEVEL :
                 PrintTestTarget(outputFile, target, t.name);
