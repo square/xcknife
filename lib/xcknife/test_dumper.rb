@@ -244,15 +244,12 @@ module XCKnife
     end
 
     def install_app(test_host_path)
-      install_timeout = '45s'
-      shutdown_boot_timeout = '45s'
-
       retries_count = 0
       max_retry_count = 3
-      until (retries_count > max_retry_count) or call_simctl(["install", @device_id, test_host_path], timeout: install_timeout)
+      until (retries_count > max_retry_count) or call_simctl(["install", @device_id, test_host_path])
         retries_count += 1
-        call_simctl ['shutdown', @device_id], timeout: shutdown_boot_timeout
-        call_simctl ['boot', @device_id], timeout: shutdown_boot_timeout
+        call_simctl ['shutdown', @device_id]
+        call_simctl ['boot', @device_id]
         sleep 1.0
       end
 
@@ -279,22 +276,20 @@ module XCKnife
     end
 
     def run_apptest(env, test_host_bundle_identifier, test_bundle_path)
-      unless call_simctl(["launch", @device_id, test_host_bundle_identifier, '-XCTest', 'All', test_bundle_path], env: env, timeout: '5m')
+      unless call_simctl(["launch", @device_id, test_host_bundle_identifier, '-XCTest', 'All', test_bundle_path], env: env)
         raise TestDumpError, "Launching #{test_bundle_path} in #{test_host_bundle_identifier} failed"
       end
     end
 
     def run_logic_test(env, test_host, test_bundle_path)
       opts = @debug ? {} : { err: "/dev/null" }
-      unless call_simctl(["spawn", @device_id, test_host, '-XCTest', 'All', test_bundle_path], env: env, timeout: '5m', **opts)
+      unless call_simctl(["spawn", @device_id, test_host, '-XCTest', 'All', test_bundle_path], env: env, **opts)
         raise TestDumpError, "Spawning #{test_bundle_path} in #{test_host} failed"
       end
     end
 
-    def call_simctl(args, env: {}, timeout: nil, **spawn_opts)
-      gtimeout = timeout ? "gtimeout #{timeout} " : nil
+    def call_simctl(args, env: {}, **spawn_opts)
       args = [simctl] + args
-      args.insert(0, 'gtimeout', timeout.to_s) if timeout
       cmd = Shellwords.shelljoin(args)
       puts "Running:\n$ #{cmd}"
       logger.info { "Environment variables:\n #{env.pretty_print_inspect}" }
