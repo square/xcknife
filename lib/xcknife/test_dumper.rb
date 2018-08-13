@@ -166,7 +166,6 @@ module XCKnife
       JSON.load(xctestrun_as_json).map do |test_bundle_name, test_bundle|
         test_specification = list_tests_with_simctl(list_folder, test_bundle, test_bundle_name, extra_environment_variables)
         wait_test_dumper_completion(test_specification.json_stream_file)
-        terminate_apptest(test_bundle)
         test_specification
       end
     end
