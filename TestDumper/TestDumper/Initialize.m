@@ -208,12 +208,12 @@ void enumerateTests() {
     if (testDumperOutputPath == nil) {
         outFile = stdout;
     } else {
-        outFile = fopen(testDumperOutputPath.UTF8String, "a");
+        outFile = fopen(testDumperOutputPath.UTF8String, "w+");
     }
     
     NSLog(@"Opened %@ with fd %p", testDumperOutputPath, outFile);
     if (outFile == NULL) {
-        debugLog(@"output file already exists");
+        debugLog(@"File already exists. Stopping");
         NSLog(@"File already exists %@. Stopping", testDumperOutputPath);
         exit(0);
     }
@@ -235,8 +235,6 @@ void enumerateTests() {
 {
 
     for (XCTest *t in self.tests) {
-        debugLog(@"this is a test");
-        debugLog(t.name);
         switch (level) {
             case TEST_TARGET_LEVEL :
                 PrintTestTarget(outputFile, target, t.name);
