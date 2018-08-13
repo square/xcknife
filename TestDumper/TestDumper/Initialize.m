@@ -71,6 +71,39 @@
 
 #include <dlfcn.h>
 
+// Logging
+const char *logFilePath = "/tmp/TestDumper.log";
+FILE *logFile;
+
+void initializeLogFile()
+{
+    logFile = fopen(logFilePath, "w");
+}
+
+void logDebug(NSString *msg)
+{
+    assert(logFile);
+    fprintf(logFile, "%s", msg.UTF8String);
+    fprintf(logFile, "\n");
+    
+    NSLog(@"%@", msg);
+}
+
+void logInit()
+{
+    logDebug(@"Starting TestDumper...");
+    logDebug(@"Environment Variables:");
+    logDebug(NSProcessInfo.processInfo.environment.description);
+    logDebug(@"Command Line Arguments:");
+    logDebug(NSProcessInfo.processInfo.arguments.description);
+    
+    logDebug(@"--------------------------------");
+}
+
+void logEnd()
+{
+    logDebug(@"EndingTestDumper...");
+}
 
 // Used for a structured log, just like Xctool's.
 // Example: https://github.com/square/xcknife/blob/master/example/xcknife-exemplar.json-stream
@@ -121,15 +154,11 @@ const int TEST_CLASS_LEVEL = 1;
 const int TEST_METHOD_LEVEL = 2;
 FILE *noteFile;
 
-static void debugLog(NSString* message) {
-    fprintf(noteFile, message.UTF8String);
-    fprintf(noteFile, "\n");
-}
 __attribute__((constructor))
 void initialize() {
-    noteFile = fopen("/tmp/testdumper.log", "w");
-    fprintf(noteFile, "Starting test dumper!\n");
     NSLog(@"Starting TestDumper");
+    initializeLogFile();
+    logInit();
     NSString *testDumperOutputPath = NSProcessInfo.processInfo.environment[@"TestDumperOutputPath"];
     NSFileManager *fileManager = [NSFileManager defaultManager];
 
@@ -146,44 +175,45 @@ void initialize() {
     } else {
         enumerateTests();
     }
+    logEnd();
 }
 
 void enumerateTests() {
-    debugLog(@"printing arguments");
+    logDebug(@"printing arguments");
     for (NSString* argument in NSProcessInfo.processInfo.arguments) {
         if ([argument hasSuffix:@".xctest"]) {
-            debugLog(argument);
+            logDebug(argument);
         }
     }
 
-    debugLog(@"Listing all test bundles");
+    logDebug(@"Listing all test bundles");
     for (NSBundle *bundle in NSBundle.allBundles) {
         NSString *string = [@"Found a test bundle named: " stringByAppendingString:bundle.bundlePath];
-        debugLog(string);
+        logDebug(string);
     }
-    debugLog(@"Finished listing all test bundles");
+    logDebug(@"Finished listing all test bundles");
     
     NSString *testBundle = [[[NSProcessInfo processInfo] arguments] lastObject];
     NSBundle* testBundleObj = [NSBundle bundleWithPath:testBundle];
     [testBundleObj load];
-    debugLog(@"test bundle loaded");
+    logDebug(@"test bundle loaded");
     
-    debugLog(@"Listing all test bundles");
+    logDebug(@"Listing all test bundles");
     for (NSBundle *bundle in NSBundle.allBundles) {
         NSString *string = [@"Found a test bundle named: " stringByAppendingString:bundle.bundlePath];
-        debugLog(string);
+        logDebug(string);
     }
-    debugLog(@"Finished listing all test bundles");
+    logDebug(@"Finished listing all test bundles");
     
     //XCTestConfiguration *config = [[XCTestConfiguration alloc] init];
     NSString *testType = [NSString stringWithUTF8String: getenv("XCTEST_TYPE")];
     //NSString *testTarget = [NSString stringWithUTF8String: getenv("XCTEST_TARGET")];
     NSString *testTarget = [[[testBundle componentsSeparatedByString:@"/"] lastObject] componentsSeparatedByString:@"."][0];
     
-    debugLog(@"The test target is:");
-    debugLog(testTarget);
+    logDebug(@"The test target is:");
+    logDebug(testTarget);
     if ([testType isEqualToString: @"APPTEST"]) {
-        debugLog(@"IS APPTEST");
+        logDebug(@"IS APPTEST");
         //        config.testBundleURL = [NSURL fileURLWithPath:NSProcessInfo.processInfo.environment[@"XCInjectBundle"]];
         //        config.targetApplicationPath = NSProcessInfo.processInfo.environment[@"XCInjectBundleInto"];
         //
@@ -199,7 +229,7 @@ void enumerateTests() {
         
         //dlopen(getenv("IDE_INJECTION_PATH"), RTLD_GLOBAL);
         
-        debugLog(@"not doing dlopen anymore");
+        logDebug(@"not doing dlopen anymore");
     }
     
     FILE *outFile;
@@ -213,7 +243,7 @@ void enumerateTests() {
     
     NSLog(@"Opened %@ with fd %p", testDumperOutputPath, outFile);
     if (outFile == NULL) {
-        debugLog(@"File already exists. Stopping");
+        logDebug(@"File already exists. Stopping");
         NSLog(@"File already exists %@. Stopping", testDumperOutputPath);
         exit(0);
     }
