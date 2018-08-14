@@ -69,6 +69,8 @@ module XCKnife
     end
 
     def parse_arguments(args)
+      puts "DTANG_DEBUG"
+      puts args
       positional_arguments = parse_options(args)
       if positional_arguments.size < required_arguments.size
         warn_and_exit("You must specify *all* required arguments: #{required_arguments.join(", ")}")
