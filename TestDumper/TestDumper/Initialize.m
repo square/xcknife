@@ -156,12 +156,12 @@ FILE *noteFile;
 __attribute__((constructor))
 void initialize() {
     NSLog(@"Starting TestDumper");
-    //char *logFilePath = "/tmp/TestDumper.log";
-    char *logFilePath = [[[NSProcessInfo processInfo] arguments][2] UTF8String];
+    char *logFilePath = "/tmp/TestDumper.log";
+    //char *logFilePath = [[[NSProcessInfo processInfo] arguments][2] UTF8String];
     initializeLogFile(logFilePath);
     logInit();
-    //NSString *testBundlePath = [[[NSProcessInfo processInfo] arguments] lastObject];
-    NSString *testBundlePath = [[NSProcessInfo processInfo] arguments][3];
+    NSString *testBundlePath = [[[NSProcessInfo processInfo] arguments] lastObject];
+    //NSString *testBundlePath = [[NSProcessInfo processInfo] arguments][3];
     NSString *testDumperOutputPath = NSProcessInfo.processInfo.environment[@"TestDumperOutputPath"];
     NSFileManager *fileManager = [NSFileManager defaultManager];
 
