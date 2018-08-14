@@ -72,10 +72,9 @@
 #include <dlfcn.h>
 
 // Logging
-const char *logFilePath = "/tmp/TestDumper.log";
 FILE *logFile;
 
-void initializeLogFile()
+void initializeLogFile(char *logFilePath)
 {
     logFile = fopen(logFilePath, "w");
 }
@@ -157,8 +156,10 @@ FILE *noteFile;
 __attribute__((constructor))
 void initialize() {
     NSLog(@"Starting TestDumper");
-    initializeLogFile();
+    char *logFilePath = "/tmp/TestDumper.log";
+    initializeLogFile(logFilePath);
     logInit();
+    NSString *testBundlePath = [[[NSProcessInfo processInfo] arguments] lastObject];
     NSString *testDumperOutputPath = NSProcessInfo.processInfo.environment[@"TestDumperOutputPath"];
     NSFileManager *fileManager = [NSFileManager defaultManager];
 
@@ -170,21 +171,23 @@ void initialize() {
 
     if ([testType isEqualToString: @"APPTEST"]) {
         [[NSNotificationCenter defaultCenter] addObserverForName:UIApplicationDidFinishLaunchingNotification object:nil queue:nil usingBlock:^(NSNotification * _Nonnull note) {
-            enumerateTests();
+            enumerateTests(testBundlePath);
         }];
     } else {
-        enumerateTests();
+        enumerateTests(testBundlePath);
     }
     logEnd();
 }
 
-void enumerateTests() {
-    logDebug(@"printing arguments");
+void enumerateTests(NSString *testBundlePath) {
+    logDebug(@"Printing arguments");
     for (NSString* argument in NSProcessInfo.processInfo.arguments) {
         if ([argument hasSuffix:@".xctest"]) {
             logDebug(argument);
         }
     }
+    logDebug(@"Done printing arguments");
+
 
     logDebug(@"Listing all test bundles");
     for (NSBundle *bundle in NSBundle.allBundles) {
@@ -193,8 +196,7 @@ void enumerateTests() {
     }
     logDebug(@"Finished listing all test bundles");
     
-    NSString *testBundle = [[[NSProcessInfo processInfo] arguments] lastObject];
-    NSBundle* testBundleObj = [NSBundle bundleWithPath:testBundle];
+    NSBundle* testBundleObj = [NSBundle bundleWithPath:testBundlePath];
     [testBundleObj load];
     logDebug(@"test bundle loaded");
     
@@ -228,8 +230,6 @@ void enumerateTests() {
         //        setenv("XCTestConfigurationFilePath", configPath.UTF8String, YES);
         
         //dlopen(getenv("IDE_INJECTION_PATH"), RTLD_GLOBAL);
-        
-        logDebug(@"not doing dlopen anymore");
     }
     
     FILE *outFile;
