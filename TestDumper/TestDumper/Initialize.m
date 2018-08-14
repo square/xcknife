@@ -210,7 +210,7 @@ void enumerateTests(NSString *testBundlePath) {
     //XCTestConfiguration *config = [[XCTestConfiguration alloc] init];
     NSString *testType = [NSString stringWithUTF8String: getenv("XCTEST_TYPE")];
     //NSString *testTarget = [NSString stringWithUTF8String: getenv("XCTEST_TARGET")];
-    NSString *testTarget = [[[testBundle componentsSeparatedByString:@"/"] lastObject] componentsSeparatedByString:@"."][0];
+    NSString *testTarget = [[[testBundlePath componentsSeparatedByString:@"/"] lastObject] componentsSeparatedByString:@"."][0];
     
     logDebug(@"The test target is:");
     logDebug(testTarget);
