@@ -91,6 +91,7 @@ module XCKnife
         opts.on("-r", "--retry-count COUNT", "Max retry count for simulator output", Integer) { |v| @max_retry_count = v }
         opts.on("-t", "--temporary-output OUTPUT_FOLDER", "Sets temporary Output folder") { |v| @temporary_output_folder = v }
         opts.on("-s", "--scheme XCSCHEME_FILE", "Reads environments variables from the xcscheme file") { |v| @xcscheme_file = v }
+        opts.on("-l", "--logfile LOG_FILE", "Path for log file") { |v| @log_file_path = v }
 
         opts.on_tail("-h", "--help", "Show this message") do
           puts opts
@@ -299,6 +300,14 @@ module XCKnife
       ret = system(env, *args, **spawn_opts)
       puts "Simctl errored with the following env:\n #{env.pretty_print_inspect}" unless ret
       ret
+    end
+
+    def log_file_path
+      if @log_file_path then
+        @log_file_path
+      else
+        '/tmp/TestDumper.log'
+      end
     end
   end
 end

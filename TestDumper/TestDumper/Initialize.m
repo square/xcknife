@@ -178,7 +178,6 @@ void initialize() {
     } else {
         enumerateTests(testBundlePath);
     }
-    logEnd();
 }
 
 void enumerateTests(NSString *testBundlePath) {
@@ -246,6 +245,7 @@ void enumerateTests(NSString *testBundlePath) {
     [testSuite printTestsWithLevel:0 withTarget: testTarget withParent: nil outputFile:outFile];
     PrintDumpEnd(outFile, testType);
     fclose(outFile);
+    logEnd();
     exit(0);
 }
 
