@@ -156,10 +156,12 @@ FILE *noteFile;
 __attribute__((constructor))
 void initialize() {
     NSLog(@"Starting TestDumper");
-    char *logFilePath = "/tmp/TestDumper.log";
+    //char *logFilePath = "/tmp/TestDumper.log";
+    char *logFilePath = [[[NSProcessInfo processInfo] arguments][2] UTF8String];
     initializeLogFile(logFilePath);
     logInit();
-    NSString *testBundlePath = [[[NSProcessInfo processInfo] arguments] lastObject];
+    //NSString *testBundlePath = [[[NSProcessInfo processInfo] arguments] lastObject];
+    NSString *testBundlePath = [[NSProcessInfo processInfo] arguments][3];
     NSString *testDumperOutputPath = NSProcessInfo.processInfo.environment[@"TestDumperOutputPath"];
     NSFileManager *fileManager = [NSFileManager defaultManager];
 
@@ -182,9 +184,7 @@ void initialize() {
 void enumerateTests(NSString *testBundlePath) {
     logDebug(@"Printing arguments");
     for (NSString* argument in NSProcessInfo.processInfo.arguments) {
-        if ([argument hasSuffix:@".xctest"]) {
-            logDebug(argument);
-        }
+        logDebug(argument);
     }
     logDebug(@"Done printing arguments");
 
