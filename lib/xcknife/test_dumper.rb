@@ -279,14 +279,14 @@ module XCKnife
 
     def run_apptest(env, test_host_bundle_identifier, test_bundle_path)
       #unless call_simctl(["launch", @device_id, test_host_bundle_identifier, '-XCTest', 'All', test_bundle_path], env: env)
-      unless call_simctl(["launch", @device_id, test_host_bundle_identifier, '-XCTest', 'All', '/tmp/TestDumper.log', test_bundle_path], env: env)
+      unless call_simctl(["launch", @device_id, test_host_bundle_identifier, '-XCTest', 'All', log_file_path, test_bundle_path], env: env)
         raise TestDumpError, "Launching #{test_bundle_path} in #{test_host_bundle_identifier} failed"
       end
     end
 
     def run_logic_test(env, test_host, test_bundle_path)
       opts = @debug ? {} : { err: "/dev/null" }
-      unless call_simctl(["spawn", @device_id, test_host, '-XCTest', 'All', '/tmp/TestDumper.log', test_bundle_path], env: env, **opts)
+      unless call_simctl(["spawn", @device_id, test_host, '-XCTest', 'All', log_file_path, test_bundle_path], env: env, **opts)
         raise TestDumpError, "Spawning #{test_bundle_path} in #{test_host} failed"
       end
     end
