@@ -30,7 +30,7 @@ module XCKnife
     end
 
     def run
-      helper = TestDumperHelper.new(@device_id, @max_retry_count, @debug, @logger)
+      helper = TestDumperHelper.new(@device_id, @max_retry_count, @debug, @logger, @log_file_path)
       extra_environment_variables = parse_scheme_file
       logger.info { "Environment variables from xcscheme: #{extra_environment_variables.pretty_inspect}" }
       output_fd = File.open(@output_file, "w")
@@ -69,8 +69,6 @@ module XCKnife
     end
 
     def parse_arguments(args)
-      puts "DTANG_DEBUG"
-      puts args
       positional_arguments = parse_options(args)
       if positional_arguments.size < required_arguments.size
         warn_and_exit("You must specify *all* required arguments: #{required_arguments.join(", ")}")
@@ -145,7 +143,7 @@ module XCKnife
 
     attr_reader :logger
 
-    def initialize(device_id, max_retry_count, debug, logger)
+    def initialize(device_id, max_retry_count, debug, logger, log_file_path)
       @xcode_path = `xcode-select -p`.strip
       @simctl_path = `xcrun -f simctl`.strip
       @platforms_path = File.join(@xcode_path, "Platforms")
@@ -156,6 +154,7 @@ module XCKnife
       @max_retry_count = max_retry_count
       @logger = logger
       @debug = debug
+      @log_file_path = log_file_path if log_file_path
     end
 
     def call(derived_data_folder, list_folder, extra_environment_variables = {})
