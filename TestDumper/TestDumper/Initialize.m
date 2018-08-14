@@ -160,8 +160,8 @@ void initialize() {
     //char *logFilePath = [[[NSProcessInfo processInfo] arguments][2] UTF8String];
     initializeLogFile(logFilePath);
     logInit();
-    NSString *testBundlePath = [[[NSProcessInfo processInfo] arguments] lastObject];
-    //NSString *testBundlePath = [[NSProcessInfo processInfo] arguments][3];
+    //NSString *testBundlePath = [[[NSProcessInfo processInfo] arguments] lastObject];
+    NSString *testBundlePath = [[NSProcessInfo processInfo] arguments][4];
     NSString *testDumperOutputPath = NSProcessInfo.processInfo.environment[@"TestDumperOutputPath"];
     NSFileManager *fileManager = [NSFileManager defaultManager];
 
@@ -182,13 +182,6 @@ void initialize() {
 }
 
 void enumerateTests(NSString *testBundlePath) {
-    logDebug(@"Printing arguments");
-    for (NSString* argument in NSProcessInfo.processInfo.arguments) {
-        logDebug(argument);
-    }
-    logDebug(@"Done printing arguments");
-
-
     logDebug(@"Listing all test bundles");
     for (NSBundle *bundle in NSBundle.allBundles) {
         NSString *string = [@"Found a test bundle named: " stringByAppendingString:bundle.bundlePath];
