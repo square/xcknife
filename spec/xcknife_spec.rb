@@ -245,6 +245,15 @@ describe XCKnife::StreamParser do
     expect(result.map(&:number_of_shards)).to eq([1, 1, 3])
   end
 
+  it "can split_machines_proportionally respecting max machine counts" do
+    stream_parser = XCKnife::StreamParser.new(5, [["TargetOnPartition1"], ["TargetOnPartition2"], ["TargetOnPartition3"]], options_for_metapartition: [{max_shard_count: 1}, {}, {max_shard_count: 1}])
+    result = stream_parser.split_machines_proportionally([
+      { "TargetOnPartition1" => { "TestClass1" => 1, "TestClass1a" => 1, "TestClass1b" => 1 } },
+      { "TargetOnPartition2" => { "TestClass2" => 1, "TestClass2a" => 1, "TestClass2b" => 2 } },
+      { "TargetOnPartition3" => { "TestClass3" => 1000, "TestClass4" => 1000, "TestClass5" => 1000} }])
+    expect(result.map(&:number_of_shards)).to eq([1, 3, 1])
+  end
+
 
   it "should never let partition_sets have less than 1 machine alocated to them" do
     stream_parser = XCKnife::StreamParser.new(3, [["TestTarget1"], ["TestTarget2"]])
@@ -283,12 +292,29 @@ describe XCKnife::StreamParser do
       expect(second_shard.values.to_set).to eq([["Class1"], ["Class2"]].to_set)
     end
 
+    it "partitions the test, across targets, forcing each target to be on a single shard" do
+      stream_parser = XCKnife::StreamParser.new(2, [%w[Target1 Target2 Target3 Target4 Target5]])
+      partition = {
+        "Target1" => { "Class1" => 1000, "Class1a" => 1 },
+        "Target2" => { "Class2" => 1000 },
+        "Target3" => { "Class3" => 1000 },
+        "Target4" => { "Class4" => 1000 },
+        "Target5" => { "Class5" => 1000, "Class5a" => 1500 },
+      }
+      shards = stream_parser.compute_single_shards(2, partition, options: described_class::Options.new(nil, false)).map(&:test_time_map)
+      expect(shards.size).to eq 2
+      expect(shards).to contain_exactly(
+        { "Target3" => ["Class3"], "Target5" => ["Class5", "Class5a"] }, # (1000) + (1000 + 1500) = 3500
+        { "Target1" => ["Class1", "Class1a"], "Target2" => ["Class2"], "Target4" => ["Class4"] } # (1000 + 1) + (1000) + (1000) = 3001
+      )
+    end
+
     it "raises an error if there are too many shards" do
       too_many_machines = 2
       stream_parser = XCKnife::StreamParser.new(too_many_machines, [["Test Target1"]])
       partition = { "Test Target1" => { "Class1" => 1000 } }
       expect { stream_parser.compute_single_shards(too_many_machines, partition) }.
-        to raise_error(XCKnife::XCKnifeError, "Too many shards")
+        to raise_error(XCKnife::XCKnifeError, a_string_starting_with("Too many shards -- 1 of 2 assignments are empty"))
     end
   end
 
