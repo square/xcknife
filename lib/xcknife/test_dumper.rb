@@ -6,6 +6,7 @@ require 'ostruct'
 require 'set'
 require 'logger'
 require 'shellwords'
+require 'open3'
 require 'xcknife/exceptions'
 
 module XCKnife
@@ -16,21 +17,22 @@ module XCKnife
 
     attr_reader :logger
 
-    def initialize(args)
+    def initialize(args, logger: Logger.new($stdout, progname: 'xcknife test dumper'))
       @debug = false
       @max_retry_count = 150
       @temporary_output_folder = nil
       @xcscheme_file = nil
       @parser = build_parser
+      @naive_dump_bundle_names = []
       parse_arguments(args)
       @device_id ||= "booted"
-      @logger = Logger.new($stdout)
+      @logger = logger
       @logger.level = @debug ? Logger::DEBUG : Logger::FATAL
       @parser = nil
     end
 
     def run
-      helper = TestDumperHelper.new(@device_id, @max_retry_count, @debug, @logger, @dylib_logfile_path)
+      helper = TestDumperHelper.new(@device_id, @max_retry_count, @debug, @logger, @dylib_logfile_path, naive_dump_bundle_names: @naive_dump_bundle_names)
       extra_environment_variables = parse_scheme_file
       logger.info { "Environment variables from xcscheme: #{extra_environment_variables.pretty_inspect}" }
       output_fd = File.open(@output_file, "w")
@@ -92,6 +94,7 @@ module XCKnife
         opts.on("-t", "--temporary-output OUTPUT_FOLDER", "Sets temporary Output folder") { |v| @temporary_output_folder = v }
         opts.on("-s", "--scheme XCSCHEME_FILE", "Reads environments variables from the xcscheme file") { |v| @xcscheme_file = v }
         opts.on("-l", "--dylib_logfile DYLIB_LOG_FILE", "Path for dylib log file") { |v| @dylib_logfile_path = v }
+        opts.on('--naive-dump TEST_BUNDLE_NAMES', 'List of test bundles to dump using static analysis', Array) { |v| @naive_dump_bundle_names = v }
 
         opts.on_tail("-h", "--help", "Show this message") do
           puts opts
@@ -143,9 +146,11 @@ module XCKnife
 
     attr_reader :logger
 
-    def initialize(device_id, max_retry_count, debug, logger, dylib_logfile_path)
+    def initialize(device_id, max_retry_count, debug, logger, dylib_logfile_path, naive_dump_bundle_names: [])
       @xcode_path = `xcode-select -p`.strip
       @simctl_path = `xcrun -f simctl`.strip
+      @nm_path = `xcrun -f nm`.strip
+      @swift_path = `xcrun -f swift`.strip
       @platforms_path = File.join(@xcode_path, "Platforms")
       @platform_path = File.join(@platforms_path, "iPhoneSimulator.platform")
       @sdk_path = File.join(@platform_path, "Developer/SDKs/iPhoneSimulator.sdk")
@@ -155,6 +160,7 @@ module XCKnife
       @logger = logger
       @debug = debug
       @dylib_logfile_path = dylib_logfile_path if dylib_logfile_path
+      @naive_dump_bundle_names = naive_dump_bundle_names
     end
 
     def call(derived_data_folder, list_folder, extra_environment_variables = {})
@@ -165,14 +171,26 @@ module XCKnife
       end
       xctestrun_as_json = `plutil -convert json -o - "#{xctestrun_file}"`
       FileUtils.mkdir_p(list_folder)
-      JSON.load(xctestrun_as_json).map do |test_bundle_name, test_bundle|
-        test_specification = list_tests_with_simctl(list_folder, test_bundle, test_bundle_name, extra_environment_variables)
-        wait_test_dumper_completion(test_specification.json_stream_file)
+      list_tests(JSON.load(xctestrun_as_json), list_folder, extra_environment_variables)
+    end
+
+    private
+
+    attr_reader :testroot
+
+    def list_tests(xctestrun, list_folder, extra_environment_variables)
+      xctestrun.map do |test_bundle_name, test_bundle|
+        if @naive_dump_bundle_names.include?(test_bundle_name)
+          test_specification = list_tests_with_nm(list_folder, test_bundle, test_bundle_name)
+        else
+          test_specification = list_tests_with_simctl(list_folder, test_bundle, test_bundle_name, extra_environment_variables)
+          wait_test_dumper_completion(test_specification.json_stream_file)
+        end
+
         test_specification
       end
     end
 
-    private
     def list_tests_with_simctl(list_folder, test_bundle, test_bundle_name, extra_environment_variables)
       env_variables = test_bundle["EnvironmentVariables"]
       testing_env_variables = test_bundle["TestingEnvironmentVariables"]
@@ -186,7 +204,7 @@ module XCKnife
 
       is_logic_test = test_bundle["TestHostBundleIdentifier"].nil?
       env = simctl_child_attrs(
-        "XCTEST_TYPE" => is_logic_test ? "LOGICTEST" : "APPTEST",
+        "XCTEST_TYPE" => xctest_type(test_bundle),
         "XCTEST_TARGET" => test_bundle_name,
         "TestDumperOutputPath" => outpath,
         "IDE_INJECTION_PATH" => testing_env_variables["DYLD_INSERT_LIBRARIES"],
@@ -217,6 +235,34 @@ module XCKnife
       return TestSpecification.new outpath, discover_tests_to_skip(test_bundle)
     end
 
+    def list_tests_with_nm(list_folder, test_bundle, test_bundle_name)
+      outpath = File.join(list_folder, test_bundle_name)
+      logger.info { "Writing out TestDumper file for #{test_bundle_name} to #{outpath}" }
+      test_specification = TestSpecification.new outpath, discover_tests_to_skip(test_bundle)
+
+      test_bundle_path = replace_vars(test_bundle["TestBundlePath"], replace_vars(test_bundle["TestHostPath"]))
+
+      methods = []
+      swift_demangled_nm(test_bundle_path) do |output|
+        output.each_line do |line|
+          next unless method = method_from_nm_line(line)
+          methods << method
+        end
+      end
+
+      test_type = xctest_type(test_bundle)
+      File.open test_specification.json_stream_file, 'a' do |f|
+        f << JSON.dump(message: "Starting Test Dumper", event: "begin-test-suite", testType: test_type) << "\n"
+        f << JSON.dump(event: 'begin-ocunit', bundleName: File.basename(test_bundle_path), targetName: test_bundle_name) << "\n"
+        methods.map { |method| method[:class] }.uniq.each do |class_name|
+          f << JSON.dump(test: '1', className: class_name, event: "end-test", totalDuration: "0") << "\n"
+        end
+        f << JSON.dump(message: "Completed Test Dumper", event: "end-action", testType: test_type) << "\n"
+      end
+
+      test_specification
+    end
+
     def discover_tests_to_skip(test_bundle)
       identifier_for_test_method = "/"
       skip_test_identifiers = test_bundle["SkipTestIdentifiers"] || []
@@ -230,7 +276,7 @@ module XCKnife
     def replace_vars(str, testhost = "<UNKNOWN>")
       str.gsub("__PLATFORMS__", @platforms_path).
         gsub("__TESTHOST__", testhost).
-        gsub("__TESTROOT__", @testroot)
+        gsub("__TESTROOT__", testroot)
     end
 
     def inject_vars(env, test_host)
@@ -308,6 +354,37 @@ module XCKnife
       else
         '/tmp/xcknife_testdumper_dylib.log'
       end
+    end
+
+    def xctest_type(test_bundle)
+      if test_bundle["TestHostBundleIdentifier"].nil?
+        "LOGICTEST"
+      else
+        "APPTEST"
+      end
+    end
+
+    def swift_demangled_nm(test_bundle_path)
+      Open3.pipeline_r([@nm_path, File.join(test_bundle_path, File.basename(test_bundle_path, '.xctest'))], [@swift_path, 'demangle']) do |o, _ts|
+        yield(o)
+      end
+    end
+
+    def method_from_nm_line(line)
+      return unless line.strip =~ %r{^
+        [\da-f]+\s # address
+        [tT]\s # symbol type
+        (?: # method
+          -\[(.+)\s(test.+)\] # objc instance method
+          | # or swift instance method
+            _(?:@objc\s)? # optional objc annotation
+            (?:[^\.]+\.)? # module name
+            (.+) # class name
+            \.(test.+)\s->\s\(\) # method signature
+        )
+      $}ox
+
+      { class: $1 || $3, method: $2 || $4 }
     end
   end
 end
