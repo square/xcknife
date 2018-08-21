@@ -30,7 +30,7 @@ module XCKnife
     end
 
     def run
-      helper = TestDumperHelper.new(@device_id, @max_retry_count, @debug, @logger)
+      helper = TestDumperHelper.new(@device_id, @max_retry_count, @debug, @logger, @dylib_logfile_path)
       extra_environment_variables = parse_scheme_file
       logger.info { "Environment variables from xcscheme: #{extra_environment_variables.pretty_inspect}" }
       output_fd = File.open(@output_file, "w")
@@ -91,6 +91,7 @@ module XCKnife
         opts.on("-r", "--retry-count COUNT", "Max retry count for simulator output", Integer) { |v| @max_retry_count = v }
         opts.on("-t", "--temporary-output OUTPUT_FOLDER", "Sets temporary Output folder") { |v| @temporary_output_folder = v }
         opts.on("-s", "--scheme XCSCHEME_FILE", "Reads environments variables from the xcscheme file") { |v| @xcscheme_file = v }
+        opts.on("-l", "--dylib_logfile DYLIB_LOG_FILE", "Path for dylib log file") { |v| @dylib_logfile_path = v }
 
         opts.on_tail("-h", "--help", "Show this message") do
           puts opts
@@ -142,7 +143,7 @@ module XCKnife
 
     attr_reader :logger
 
-    def initialize(device_id, max_retry_count, debug, logger)
+    def initialize(device_id, max_retry_count, debug, logger, dylib_logfile_path)
       @xcode_path = `xcode-select -p`.strip
       @simctl_path = `xcrun -f simctl`.strip
       @platforms_path = File.join(@xcode_path, "Platforms")
@@ -153,6 +154,7 @@ module XCKnife
       @max_retry_count = max_retry_count
       @logger = logger
       @debug = debug
+      @dylib_logfile_path = dylib_logfile_path if dylib_logfile_path
     end
 
     def call(derived_data_folder, list_folder, extra_environment_variables = {})
@@ -256,6 +258,7 @@ module XCKnife
       if retries_count > max_retry_count
         raise TestDumpError, "Installing #{test_host_path} failed"
       end
+
     end
 
     def wait_test_dumper_completion(file)
@@ -276,14 +279,14 @@ module XCKnife
     end
 
     def run_apptest(env, test_host_bundle_identifier, test_bundle_path)
-      unless call_simctl(["launch", @device_id, test_host_bundle_identifier, '-XCTest', 'All', test_bundle_path], env: env)
+      unless call_simctl(["launch", @device_id, test_host_bundle_identifier, '-XCTest', 'All', dylib_logfile_path, test_bundle_path], env: env)
         raise TestDumpError, "Launching #{test_bundle_path} in #{test_host_bundle_identifier} failed"
       end
     end
 
     def run_logic_test(env, test_host, test_bundle_path)
       opts = @debug ? {} : { err: "/dev/null" }
-      unless call_simctl(["spawn", @device_id, test_host, '-XCTest', 'All', test_bundle_path], env: env, **opts)
+      unless call_simctl(["spawn", @device_id, test_host, '-XCTest', 'All', dylib_logfile_path, test_bundle_path], env: env, **opts)
         raise TestDumpError, "Spawning #{test_bundle_path} in #{test_host} failed"
       end
     end
@@ -297,6 +300,14 @@ module XCKnife
       ret = system(env, *args, **spawn_opts)
       puts "Simctl errored with the following env:\n #{env.pretty_print_inspect}" unless ret
       ret
+    end
+
+    def dylib_logfile_path
+      if @dylib_logfile_path then
+        @dylib_logfile_path
+      else
+        '/tmp/xcknife_testdumper_dylib.log'
+      end
     end
   end
 end
