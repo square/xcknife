@@ -7,3 +7,5 @@ testdumperbuild
 contents.xcworkspacedata
 TestDumper/TestDumper.dylib
 *.tmp
+.bin/
+.bundle/
