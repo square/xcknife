@@ -23,7 +23,7 @@ EXPECTED_OUTPUT = <<eof
 {"message":"Completed Test Dumper","event":"end-action","testType":"APPTEST"}
 eof
 
-describe "Test Dumper Acceptance" do
+describe "Test Dumper Acceptance", if: RUBY_PLATFORM.include?('darwin') do
   def sh(str)
     system(str)
   end
@@ -49,17 +49,34 @@ describe "Test Dumper Acceptance" do
     end
   end
 
-  if !/darwin/.match(RUBY_PLATFORM)
-    xit "needs mac os as we are launching IOS simulators"
-  else
-    it "run test dumper on example project" do
-      stop_all_simulators
-      test_xcknife_exemplar
-      derived_data = File.join(xcknife_exemplar_path, "derivedDataPath")
-      outpath = "#{__FILE__}.out.tmp"
-      File.unlink(outpath) if File.exists?(outpath)
-      expect { XCKnife::TestDumper.new([derived_data, outpath]).run }.not_to raise_error
-      expect(IO.read(outpath).lines.to_set).to eq(EXPECTED_OUTPUT.lines.to_set)
-    end
+  let(:simulator_uuid) do
+    sim_name = "xcknife_test_dumper_#{Process.pid}"
+    sim_type = 'com.apple.CoreSimulator.SimDeviceType.iPad-Air'
+    sim_runtime = 'com.apple.CoreSimulator.SimRuntime.iOS-11-2'
+    `xcrun simctl create #{sim_name} #{sim_type} #{sim_runtime}`.strip
+  end
+
+  let(:derived_data_path) { File.join(xcknife_exemplar_path, "derivedDataPath") }
+  let(:outpath) { "#{__FILE__}.out.tmp" }
+
+  before(:all) do
+    stop_all_simulators
+    test_xcknife_exemplar
+  end
+
+  before(:each) do
+    FileUtils.rm_f outpath
+    sh "xcrun simctl boot #{simulator_uuid}"
+  end
+
+  after(:each) do
+    sh "xcrun simctl shutdown #{simulator_uuid}"
+    sh "xcrun simctl delete #{simulator_uuid}"
+  end
+
+
+  it "run test dumper on example project" do
+    expect { XCKnife::TestDumper.new([derived_data_path, outpath, simulator_uuid]).run }.not_to raise_error
+    expect(IO.read(outpath).lines.to_set).to eq(EXPECTED_OUTPUT.lines.to_set)
   end
 end
