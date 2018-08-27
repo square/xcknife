@@ -1,0 +1,5 @@
+[build "PR"]
+template = iOS-Builder-Multi-Xcode-PR-Template
+build_script = ./sqiosbuild/sqiosbuild.sh specs
+trigger_build = true
+pull_request = true
