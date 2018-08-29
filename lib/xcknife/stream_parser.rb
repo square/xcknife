@@ -10,17 +10,24 @@ module XCKnife
 
     attr_reader :number_of_shards, :test_partitions, :stats, :relevant_partitions
 
-    def initialize(number_of_shards, test_partitions)
+    def initialize(number_of_shards, test_partitions, options_for_metapartition: Array.new(test_partitions.size, {}))
       @number_of_shards = number_of_shards
       @test_partitions = test_partitions.map(&:to_set)
       @relevant_partitions = test_partitions.flatten.to_set
       @stats = ResultStats.new
-      ResultStats.members.each { |k| @stats[k] = 0}
+      @options_for_metapartition = options_for_metapartition.map { |o| Options::DEFAULT.merge(o) }
+      ResultStats.members.each { |k| @stats[k] = 0 }
     end
 
-    PartitionWithMachines = Struct.new :test_time_map, :number_of_shards, :partition_time, :max_shard_count
+    PartitionWithMachines = Struct.new :test_time_map, :number_of_shards, :partition_time, :max_shard_count, :options
     MachineAssignment = Struct.new :test_time_map, :total_time
     ResultStats = Struct.new :historical_total_tests, :current_total_tests, :class_extrapolations, :target_extrapolations
+    Options = Struct.new :max_shard_count, :split_bundles_across_machines do
+      def merge(hash)
+        self.class.new(*to_h.merge(hash).values_at(*members))
+      end
+    end
+    Options::DEFAULT = Options.new(nil, true).freeze
 
     class PartitionResult
       TimeImbalances = Struct.new :partition_set, :partitions
@@ -75,7 +82,7 @@ module XCKnife
 
     def compute_shards_for_partitions(test_time_for_partitions)
       PartitionResult.new(@stats, split_machines_proportionally(test_time_for_partitions).map do |partition|
-        compute_single_shards(partition.number_of_shards, partition.test_time_map)
+        compute_single_shards(partition.number_of_shards, partition.test_time_map, options: partition.options)
       end, test_time_for_partitions)
     end
 
@@ -102,13 +109,14 @@ module XCKnife
 
       used_shards = 0
       assignable_shards = number_of_shards - partitions.size
-      partition_with_machines_list = partitions.map do |test_time_map|
+      partition_with_machines_list = partitions.each_with_index.map do |test_time_map, metapartition|
+        options = @options_for_metapartition[metapartition]
         partition_time = 0
-        max_shard_count = test_time_map.values.map(&:size).inject(:+) || 1
-        each_duration(test_time_map) { |duration_in_milliseconds| partition_time += duration_in_milliseconds}
+        max_shard_count = options.max_shard_count || test_time_map.each_value.map(&:size).reduce(&:+) || 1
+        each_duration(test_time_map) { |duration_in_milliseconds| partition_time += duration_in_milliseconds }
         n = [1 + (assignable_shards * partition_time.to_f / total).floor, max_shard_count].min
         used_shards += n
-        PartitionWithMachines.new(test_time_map, n, partition_time, max_shard_count)
+        PartitionWithMachines.new(test_time_map, n, partition_time, max_shard_count, options)
       end
 
       fifo_with_machines_who_can_use_more_shards = partition_with_machines_list.select { |x| x.number_of_shards < x.max_shard_count}.sort_by(&:partition_time)
@@ -128,7 +136,7 @@ module XCKnife
 
     # Computes a 2-aproximation to the optimal partition_time, which is an instance of the Open shop scheduling problem (which is NP-hard)
     # see: https://en.wikipedia.org/wiki/Open-shop_scheduling
-    def compute_single_shards(number_of_shards, test_time_map)
+    def compute_single_shards(number_of_shards, test_time_map, options: Options::DEFAULT)
       raise XCKnife::XCKnifeError, "There are not enough workers provided" if number_of_shards <= 0
       raise XCKnife::XCKnifeError, "Cannot shard an empty partition_time" if test_time_map.empty?
       assignements = Array.new(number_of_shards) { MachineAssignment.new(Hash.new { |k, v| k[v] = [] }, 0) }
@@ -140,13 +148,34 @@ module XCKnife
         end
       end
 
-      list_of_test_target_class_times.sort_by! { |test_target, class_name, duration_in_milliseconds| -duration_in_milliseconds }
-      list_of_test_target_class_times.each do |test_target, class_name, duration_in_milliseconds|
+      # This might seem like an uncessary level of indirection, but it allows us to keep
+      # logic consistent regardless of the `split_bundles_across_machines` option
+      list_of_test_target_classes_times = list_of_test_target_class_times.group_by do |test_target, class_name, duration_in_milliseconds|
+        if options.split_bundles_across_machines
+          [test_target, class_name]
+        else
+          test_target
+        end
+      end.map do |(test_target, _), classes|
+        [
+          test_target,
+          classes.map { |test_target, class_name, duration_in_milliseconds| class_name },
+          classes.reduce(0) { |total_duration, (test_target, class_name, duration_in_milliseconds)| total_duration + duration_in_milliseconds},
+        ]
+      end
+
+      list_of_test_target_classes_times.sort_by! { |test_target, class_names, duration_in_milliseconds| -duration_in_milliseconds }
+      list_of_test_target_classes_times.each do |test_target, class_names, duration_in_milliseconds|
         assignemnt = assignements.min_by(&:total_time)
-        assignemnt.test_time_map[test_target] << class_name
+        assignemnt.test_time_map[test_target].concat class_names
         assignemnt.total_time += duration_in_milliseconds
       end
-      raise XCKnife::XCKnifeError, "Too many shards" if assignements.any? { |a| a.test_time_map.empty? }
+
+      if (empty_test_map_assignments = assignements.select { |a| a.test_time_map.empty? }) && !empty_test_map_assignments.empty?
+        raise XCKnife::XCKnifeError, "Too many shards -- #{empty_test_map_assignments.size} of #{number_of_shards} assignments are empty," \
+                                     " because there are not enough test classes for that many shards."
+      end
+
       assignements
     end
 
