@@ -58,6 +58,16 @@
                ReferencedContainer = "container:XCKnifeExemplar.xcodeproj">
             </BuildableReference>
          </TestableReference>
+         <TestableReference
+            skipped = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "C0C50ED221373E9200DB5BAE"
+               BuildableName = "SwiftTestTarget.xctest"
+               BlueprintName = "SwiftTestTarget"
+               ReferencedContainer = "container:XCKnifeExemplar.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
       </Testables>
       <MacroExpansion>
          <BuildableReference

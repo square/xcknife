@@ -14,6 +14,11 @@ EXPECTED_OUTPUT = <<eof
 {"event":"begin-ocunit","bundleName":"CommonTestTarget.xctest","targetName":"CommonTestTarget"}
 {"test":"1","className":"CommonTestClass","event":"end-test","totalDuration":"0"}
 {"message":"Completed Test Dumper","event":"end-action","testType":"APPTEST"}
+{"message":"Starting Test Dumper","event":"begin-test-suite","testType":"LOGICTEST"}
+{"event":"begin-ocunit","bundleName":"SwiftTestTarget.xctest","targetName":"SwiftTestTarget"}
+{"test":"1","className":"ObjCTestClass","event":"end-test","totalDuration":"0"}
+{"test":"1","className":"SwiftTestTarget","event":"end-test","totalDuration":"0"}
+{"message":"Completed Test Dumper","event":"end-action","testType":"LOGICTEST"}
 {"message":"Starting Test Dumper","event":"begin-test-suite","testType":"APPTEST"}
 {"event":"begin-ocunit","bundleName":"iPadTestTarget.xctest","targetName":"iPadTestTarget"}
 {"test":"1","className":"iPadTestClassFour","event":"end-test","totalDuration":"0"}
