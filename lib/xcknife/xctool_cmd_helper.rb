@@ -25,12 +25,24 @@ module XCKnife
     end
 
     # only-testing is available since Xcode 8
-    def xcodebuild_only_arguments(single_partition)
-      single_partition.flat_map do |test_target, classes|
+    def xcodebuild_only_arguments(single_partition, all_partitions = nil)
+      only_targets = if all_partitions
+        single_partition.keys.to_set & all_partitions.flat_map(&:keys).group_by(&:to_s).select{|_,v| v.size == 1 }.map(&:first).to_set
+      else
+        Set.new
+      end
+
+      only_target_arguments = only_targets.sort.map { |test_target| "-only-testing:#{test_target}" }
+
+      only_class_arguments = single_partition.flat_map do |test_target, classes|
+        next [] if only_targets.include?(test_target)
+
         classes.sort.map do |clazz|
           "-only-testing:#{test_target}/#{clazz}"
         end
-      end
+      end.sort
+
+      only_target_arguments + only_class_arguments
     end
 
     # skip-testing is available since Xcode 8
