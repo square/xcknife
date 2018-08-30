@@ -24,6 +24,7 @@ module XCKnife
       @xcscheme_file = nil
       @parser = build_parser
       @naive_dump_bundle_names = []
+      @skip_dump_bundle_names = []
       parse_arguments(args)
       @device_id ||= "booted"
       @logger = logger
@@ -32,7 +33,8 @@ module XCKnife
     end
 
     def run
-      helper = TestDumperHelper.new(@device_id, @max_retry_count, @debug, @logger, @dylib_logfile_path, naive_dump_bundle_names: @naive_dump_bundle_names)
+      helper = TestDumperHelper.new(@device_id, @max_retry_count, @debug, @logger, @dylib_logfile_path,
+                                    naive_dump_bundle_names: @naive_dump_bundle_names, skip_dump_bundle_names: @skip_dump_bundle_names)
       extra_environment_variables = parse_scheme_file
       logger.info { "Environment variables from xcscheme: #{extra_environment_variables.pretty_inspect}" }
       output_fd = File.open(@output_file, "w")
@@ -95,6 +97,7 @@ module XCKnife
         opts.on("-s", "--scheme XCSCHEME_FILE", "Reads environments variables from the xcscheme file") { |v| @xcscheme_file = v }
         opts.on("-l", "--dylib_logfile DYLIB_LOG_FILE", "Path for dylib log file") { |v| @dylib_logfile_path = v }
         opts.on('--naive-dump TEST_BUNDLE_NAMES', 'List of test bundles to dump using static analysis', Array) { |v| @naive_dump_bundle_names = v }
+        opts.on('--skip-dump TEST_BUNDLE_NAMES', 'List of test bundles to skip dumping', Array) { |v| @skip_dump_bundle_names = v }
 
         opts.on_tail("-h", "--help", "Show this message") do
           puts opts
@@ -146,7 +149,8 @@ module XCKnife
 
     attr_reader :logger
 
-    def initialize(device_id, max_retry_count, debug, logger, dylib_logfile_path, naive_dump_bundle_names: [])
+    def initialize(device_id, max_retry_count, debug, logger, dylib_logfile_path,
+                   naive_dump_bundle_names: [], skip_dump_bundle_names: [])
       @xcode_path = `xcode-select -p`.strip
       @simctl_path = `xcrun -f simctl`.strip
       @nm_path = `xcrun -f nm`.strip
@@ -161,6 +165,7 @@ module XCKnife
       @debug = debug
       @dylib_logfile_path = dylib_logfile_path if dylib_logfile_path
       @naive_dump_bundle_names = naive_dump_bundle_names
+      @skip_dump_bundle_names = skip_dump_bundle_names
     end
 
     def call(derived_data_folder, list_folder, extra_environment_variables = {})
@@ -180,6 +185,11 @@ module XCKnife
 
     def list_tests(xctestrun, list_folder, extra_environment_variables)
       xctestrun.map do |test_bundle_name, test_bundle|
+        if @skip_dump_bundle_names.include?(test_bundle_name)
+          logger.info { "Skipping dumping tests in `#{test_bundle_name}`"}
+          next
+        end
+
         if @naive_dump_bundle_names.include?(test_bundle_name)
           test_specification = list_tests_with_nm(list_folder, test_bundle, test_bundle_name)
         else
@@ -188,7 +198,7 @@ module XCKnife
         end
 
         test_specification
-      end
+      end.compact
     end
 
     def list_tests_with_simctl(list_folder, test_bundle, test_bundle_name, extra_environment_variables)

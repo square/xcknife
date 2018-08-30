@@ -16,9 +16,11 @@ describe XCKnife::TestDumperHelper do
   let(:logger) { instance_spy(Logger) }
   let(:dylib_logfile_path) { 'dylib_logfile_path' }
   let(:naive_dump_bundle_names) { ['NaiveBundle'] }
+  let(:skip_dump_bundle_names) { ['SkipBundle'] }
 
   subject(:test_dumper_helper) do
-    described_class.new(device_id, max_retry_count, debug, logger, dylib_logfile_path, naive_dump_bundle_names: naive_dump_bundle_names)
+    described_class.new(device_id, max_retry_count, debug, logger, dylib_logfile_path,
+                        naive_dump_bundle_names: naive_dump_bundle_names, skip_dump_bundle_names: skip_dump_bundle_names)
   end
 
   describe '#list_tests' do
@@ -40,6 +42,24 @@ describe XCKnife::TestDumperHelper do
 
       expect(test_dumper_helper.send(:list_tests, xctestrun, list_folder, extra_environment_variables)).
         to eq [naive_test_specification, other_test_specification]
+    end
+
+    it 'skips dumping given bundles' do
+      xctestrun = {
+        'SkipBundle' => :test_bundle_skip,
+        'OtherBundle' => :test_bundle_other,
+      }
+      list_folder = 'list_folder'
+      extra_environment_variables = {}
+
+      expect(test_dumper_helper).to receive(:list_tests_with_nm).never
+      expect(test_dumper_helper).to receive(:list_tests_with_simctl).once
+        .with(list_folder, :test_bundle_other, 'OtherBundle', extra_environment_variables)
+        .and_return(other_test_specification = XCKnife::TestDumperHelper::TestSpecification.new('other/json_stream_file'))
+      expect(test_dumper_helper).to receive(:wait_test_dumper_completion).with(other_test_specification.json_stream_file)
+
+      expect(test_dumper_helper.send(:list_tests, xctestrun, list_folder, extra_environment_variables)).
+        to eq [other_test_specification]
     end
   end
 
