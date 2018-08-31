@@ -186,11 +186,9 @@ module XCKnife
     def list_tests(xctestrun, list_folder, extra_environment_variables)
       xctestrun.map do |test_bundle_name, test_bundle|
         if @skip_dump_bundle_names.include?(test_bundle_name)
-          logger.info { "Skipping dumping tests in `#{test_bundle_name}`"}
-          next
-        end
-
-        if @naive_dump_bundle_names.include?(test_bundle_name)
+          logger.info { "Skipping dumping tests in `#{test_bundle_name}` -- writing out fake event"}
+          test_specification = list_single_test(list_folder, test_bundle, test_bundle_name)
+        elsif @naive_dump_bundle_names.include?(test_bundle_name)
           test_specification = list_tests_with_nm(list_folder, test_bundle, test_bundle_name)
         else
           test_specification = list_tests_with_simctl(list_folder, test_bundle, test_bundle_name, extra_environment_variables)
@@ -198,7 +196,7 @@ module XCKnife
         end
 
         test_specification
-      end.compact
+      end
     end
 
     def list_tests_with_simctl(list_folder, test_bundle, test_bundle_name, extra_environment_variables)
@@ -246,19 +244,31 @@ module XCKnife
     end
 
     def list_tests_with_nm(list_folder, test_bundle, test_bundle_name)
+      output_methods(list_folder, test_bundle, test_bundle_name) do |test_bundle_path|
+        methods = []
+        swift_demangled_nm(test_bundle_path) do |output|
+          output.each_line do |line|
+            next unless method = method_from_nm_line(line)
+            methods << method
+          end
+        end
+        methods
+      end
+    end
+
+    def list_single_test(list_folder, test_bundle, test_bundle_name)
+      output_methods(list_folder, test_bundle, test_bundle_name) do
+        [{ class: test_bundle_name, method: 'test' }]
+      end
+    end
+
+    def output_methods(list_folder, test_bundle, test_bundle_name)
       outpath = File.join(list_folder, test_bundle_name)
       logger.info { "Writing out TestDumper file for #{test_bundle_name} to #{outpath}" }
       test_specification = TestSpecification.new outpath, discover_tests_to_skip(test_bundle)
 
       test_bundle_path = replace_vars(test_bundle["TestBundlePath"], replace_vars(test_bundle["TestHostPath"]))
-
-      methods = []
-      swift_demangled_nm(test_bundle_path) do |output|
-        output.each_line do |line|
-          next unless method = method_from_nm_line(line)
-          methods << method
-        end
-      end
+      methods = yield(test_bundle_path)
 
       test_type = xctest_type(test_bundle)
       File.open test_specification.json_stream_file, 'a' do |f|

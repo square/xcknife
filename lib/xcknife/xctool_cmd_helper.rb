@@ -25,9 +25,9 @@ module XCKnife
     end
 
     # only-testing is available since Xcode 8
-    def xcodebuild_only_arguments(single_partition, all_partitions = nil)
-      only_targets = if all_partitions
-        single_partition.keys.to_set & all_partitions.flat_map(&:keys).group_by(&:to_s).select{|_,v| v.size == 1 }.map(&:first).to_set
+    def xcodebuild_only_arguments(single_partition, meta_partition = nil)
+      only_targets = if meta_partition
+        single_partition.keys.to_set & meta_partition.flat_map(&:keys).group_by(&:to_s).select{|_,v| v.size == 1 }.map(&:first).to_set
       else
         Set.new
       end

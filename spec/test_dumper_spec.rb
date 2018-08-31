@@ -56,10 +56,13 @@ describe XCKnife::TestDumperHelper do
       expect(test_dumper_helper).to receive(:list_tests_with_simctl).once
         .with(list_folder, :test_bundle_other, 'OtherBundle', extra_environment_variables)
         .and_return(other_test_specification = XCKnife::TestDumperHelper::TestSpecification.new('other/json_stream_file'))
+      expect(test_dumper_helper).to receive(:list_single_test).once
+        .with(list_folder, :test_bundle_skip, 'SkipBundle')
+        .and_return(skip_test_specification = XCKnife::TestDumperHelper::TestSpecification.new('skip/json_stream_file'))
       expect(test_dumper_helper).to receive(:wait_test_dumper_completion).with(other_test_specification.json_stream_file)
 
       expect(test_dumper_helper.send(:list_tests, xctestrun, list_folder, extra_environment_variables)).
-        to eq [other_test_specification]
+        to eq [skip_test_specification, other_test_specification]
     end
   end
 
