@@ -3,6 +3,25 @@ require 'spec_helper'
 describe XCKnife::StreamParser do
   include XCKnife::XCToolCmdHelper
 
+  describe '#initialize' do
+    context "when given options_for_metapartition" do
+      let(:options) do
+        [
+          { max_shard_count: 4 },
+          {},
+          { split_bundles_across_machines: false },
+        ]
+      end
+
+      subject { described_class.new(0, [], options_for_metapartition: options).instance_variable_get(:@options_for_metapartition) }
+
+      it do
+        options_class = described_class::Options
+        is_expected.to eq [options_class.new(4, true), options_class.new(nil, true), options_class.new(nil, false)]
+      end
+    end
+  end
+
   context 'test_time_for_partitions' do
     subject { XCKnife::StreamParser.new(2, [["TestTarget1"], ["TestTarget2"]]) }
 

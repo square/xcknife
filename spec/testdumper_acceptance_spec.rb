@@ -63,6 +63,7 @@ describe "Test Dumper Acceptance", if: RUBY_PLATFORM.include?('darwin') do
 
   let(:derived_data_path) { File.join(xcknife_exemplar_path, "derivedDataPath") }
   let(:outpath) { "#{__FILE__}.out.tmp" }
+  let(:logger) { instance_spy(Logger) }
 
   before(:all) do
     stop_all_simulators
@@ -81,7 +82,15 @@ describe "Test Dumper Acceptance", if: RUBY_PLATFORM.include?('darwin') do
 
 
   it "run test dumper on example project" do
-    expect { XCKnife::TestDumper.new([derived_data_path, outpath, simulator_uuid]).run }.not_to raise_error
-    expect(IO.read(outpath).lines.to_set).to eq(EXPECTED_OUTPUT.lines.to_set)
+    expect { XCKnife::TestDumper.new([derived_data_path, outpath, simulator_uuid], logger: logger).run }.not_to raise_error
+    expect(IO.read(outpath).lines).to eq(EXPECTED_OUTPUT.lines)
+  end
+
+  it "dumps tests using nm on example project" do
+    test_bundle_names = ["CommonTestTarget", "iPhoneTestTarget", "SwiftTestTarget"]
+    expect_any_instance_of(XCKnife::TestDumperHelper).to receive(:list_tests_with_nm).exactly(3).times.and_call_original
+    expect_any_instance_of(XCKnife::TestDumperHelper).to receive(:list_tests_with_simctl).once.and_call_original
+    expect { XCKnife::TestDumper.new([derived_data_path, outpath, simulator_uuid, '--naive-dump', test_bundle_names.join(',')], logger: logger).run }.not_to raise_error
+    expect(IO.read(outpath).lines).to eq(EXPECTED_OUTPUT.lines)
   end
 end

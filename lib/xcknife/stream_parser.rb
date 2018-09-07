@@ -172,8 +172,9 @@ module XCKnife
       end
 
       if (empty_test_map_assignments = assignements.select { |a| a.test_time_map.empty? }) && !empty_test_map_assignments.empty?
+        test_grouping = options.split_bundles_across_machines ? 'classes' : 'targets'
         raise XCKnife::XCKnifeError, "Too many shards -- #{empty_test_map_assignments.size} of #{number_of_shards} assignments are empty," \
-                                     " because there are not enough test classes for that many shards."
+                                     " because there are not enough test #{test_grouping} for that many shards."
       end
 
       assignements
