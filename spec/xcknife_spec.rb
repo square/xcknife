@@ -315,16 +315,16 @@ describe XCKnife::StreamParser do
       stream_parser = XCKnife::StreamParser.new(2, [%w[Target1 Target2 Target3 Target4 Target5]])
       partition = {
         "Target1" => { "Class1" => 1000, "Class1a" => 1 },
-        "Target2" => { "Class2" => 1000 },
-        "Target3" => { "Class3" => 1000 },
-        "Target4" => { "Class4" => 1000 },
+        "Target2" => { "Class2" => 1010 },
+        "Target3" => { "Class3" => 1020 },
+        "Target4" => { "Class4" => 1030 },
         "Target5" => { "Class5" => 1000, "Class5a" => 1500 },
       }
       shards = stream_parser.compute_single_shards(2, partition, options: described_class::Options.new(nil, false)).map(&:test_time_map)
       expect(shards.size).to eq 2
       expect(shards).to contain_exactly(
-        { "Target3" => ["Class3"], "Target5" => ["Class5", "Class5a"] }, # (1000) + (1000 + 1500) = 3500
-        { "Target1" => ["Class1", "Class1a"], "Target2" => ["Class2"], "Target4" => ["Class4"] } # (1000 + 1) + (1000) + (1000) = 3001
+        { "Target1" => ["Class1", "Class1a"], "Target5" => ["Class5", "Class5a"] }, # (1000 + 1) + (1000 + 1500) = 3501
+        { "Target2" => ["Class2"], "Target3" => ["Class3"], "Target4" => ["Class4"] } # (1010) + (1020) + (1030) = 3060
       )
     end
 
