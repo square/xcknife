@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    xcknife (0.7.0)
+    xcknife (0.8.0)
 
 GEM
   remote: https://gems.vip.global.square/
@@ -38,4 +38,4 @@ DEPENDENCIES
   xcknife!
 
 BUNDLED WITH
-   1.16.3
+   1.17.1

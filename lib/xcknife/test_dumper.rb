@@ -184,6 +184,7 @@ module XCKnife
     attr_reader :testroot
 
     def list_tests(xctestrun, list_folder, extra_environment_variables)
+      xctestrun.reject! { |test_bundle_name, _| test_bundle_name == '__xctestrun_metadata__' }
       xctestrun.map do |test_bundle_name, test_bundle|
         if @skip_dump_bundle_names.include?(test_bundle_name)
           logger.info { "Skipping dumping tests in `#{test_bundle_name}` -- writing out fake event"}
@@ -397,7 +398,8 @@ module XCKnife
         (?: # method
           -\[(.+)\s(test.+)\] # objc instance method
           | # or swift instance method
-            _(?:@objc\s)? # optional objc annotation
+            _? # only present on Xcode 10.0 and below
+            (?:@objc\s)? # optional objc annotation
             (?:[^\.]+\.)? # module name
             (.+) # class name
             \.(test.+)\s->\s\(\) # method signature
