@@ -10,6 +10,8 @@ describe XCKnife::StreamParser do
           { max_shard_count: 4 },
           {},
           { split_bundles_across_machines: false },
+          { allow_fewer_shards: true },
+          { unknown_option: true }
         ]
       end
 
@@ -17,7 +19,13 @@ describe XCKnife::StreamParser do
 
       it do
         options_class = described_class::Options
-        is_expected.to eq [options_class.new(4, true), options_class.new(nil, true), options_class.new(nil, false)]
+        is_expected.to eq [
+          options_class.new(4, true, false),
+          options_class.new(nil, true, false),
+          options_class.new(nil, false, false),
+          options_class.new(nil, true, true),
+          options_class.new(nil, true, false),
+        ]
       end
     end
   end
@@ -334,6 +342,17 @@ describe XCKnife::StreamParser do
       partition = { "Test Target1" => { "Class1" => 1000 } }
       expect { stream_parser.compute_single_shards(too_many_machines, partition) }.
         to raise_error(XCKnife::XCKnifeError, a_string_starting_with("Too many shards -- 1 of 2 assignments are empty"))
+    end
+
+    it "does not raise an error if there are too many shards and allow_fewer_shards is given" do
+      too_many_machines = 2
+      stream_parser = XCKnife::StreamParser.new(too_many_machines, [["Test Target1"]])
+      partition = { "Test Target1" => { "Class1" => 1000 } }
+      shards = stream_parser.compute_single_shards(too_many_machines, partition, options: described_class::Options.new(nil, false, true)).map(&:test_time_map)
+      expect(shards.size).to eq 1
+      expect(shards).to contain_exactly(
+        { "Test Target1" => ["Class1"] },
+      )
     end
   end
 
