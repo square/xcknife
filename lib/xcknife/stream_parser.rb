@@ -22,12 +22,12 @@ module XCKnife
     PartitionWithMachines = Struct.new :test_time_map, :number_of_shards, :partition_time, :max_shard_count, :options
     MachineAssignment = Struct.new :test_time_map, :total_time
     ResultStats = Struct.new :historical_total_tests, :current_total_tests, :class_extrapolations, :target_extrapolations
-    Options = Struct.new :max_shard_count, :split_bundles_across_machines do
+    Options = Struct.new :max_shard_count, :split_bundles_across_machines, :allow_fewer_shards do
       def merge(hash)
         self.class.new(*to_h.merge(hash).values_at(*members))
       end
     end
-    Options::DEFAULT = Options.new(nil, true).freeze
+    Options::DEFAULT = Options.new(nil, true, false).freeze
 
     class PartitionResult
       TimeImbalances = Struct.new :partition_set, :partitions
@@ -171,11 +171,12 @@ module XCKnife
         assignemnt.total_time += duration_in_milliseconds
       end
 
-      if (empty_test_map_assignments = assignements.select { |a| a.test_time_map.empty? }) && !empty_test_map_assignments.empty?
+      if (empty_test_map_assignments = assignements.select { |a| a.test_time_map.empty? }) && !empty_test_map_assignments.empty? && !options.allow_fewer_shards
         test_grouping = options.split_bundles_across_machines ? 'classes' : 'targets'
         raise XCKnife::XCKnifeError, "Too many shards -- #{empty_test_map_assignments.size} of #{number_of_shards} assignments are empty," \
                                      " because there are not enough test #{test_grouping} for that many shards."
       end
+      assignements.reject! { |a| a.test_time_map.empty? }
 
       assignements
     end
