@@ -289,6 +289,53 @@ describe XCKnife::StreamParser do
     expect(result.map(&:number_of_shards)).to eq([1, 2])
   end
 
+  it "handles when allow_fewer_shards is true for the entire parser and the single shard" do
+    stream_parser = XCKnife::StreamParser.new(3, [["TestTarget1"]], options_for_metapartition: [{ allow_fewer_shards: true }], allow_fewer_shards: true)
+    result = stream_parser.split_machines_proportionally([{ "TargetOnPartition1" => { "TestClass1" => 1 } }])
+    expect(result).to eq [
+      described_class::PartitionWithMachines.new(
+        { 'TargetOnPartition1' => { "TestClass1" => 1 }},
+        1,
+        1,
+        1,
+        described_class::Options.new(nil, true, true)
+      )
+    ]
+  end
+
+  it "handles a max_shard_count when allow_fewer_shards is true for the entire parser and the single shard when the max count is the same as the shard count" do
+    stream_parser = XCKnife::StreamParser.new(3, [["TestTarget1"]], options_for_metapartition: [{ max_shard_count: 3, allow_fewer_shards: true }], allow_fewer_shards: true)
+    result = stream_parser.split_machines_proportionally([{ "TargetOnPartition1" => { "TestClass1" => 1 } }])
+    expect(result).to eq [
+      described_class::PartitionWithMachines.new(
+        { 'TargetOnPartition1' => { "TestClass1" => 1 }},
+        1,
+        1,
+        1,
+        described_class::Options.new(3, true, true)
+      )
+    ]
+  end
+
+  it "handles a max_shard_count when allow_fewer_shards is true for the entire parser" do
+    stream_parser = XCKnife::StreamParser.new(3, [["TestTarget1"]], options_for_metapartition: [{ max_shard_count: 2}], allow_fewer_shards: true)
+    result = stream_parser.split_machines_proportionally([{ "TargetOnPartition1" => { "TestClass1" => 1, "TestClass2" => 1 } }])
+    expect(result).to eq [
+      described_class::PartitionWithMachines.new(
+        { 'TargetOnPartition1' => { "TestClass1" => 1, "TestClass2" => 1 } },
+        2,
+        2,
+        2,
+        described_class::Options.new(2, true, false)
+      )
+    ]
+  end
+
+  it "raises when there are extra machines when using max shard count" do
+    stream_parser = XCKnife::StreamParser.new(3, [["TestTarget1"]], options_for_metapartition: [{ max_shard_count: 2}])
+    expect { stream_parser.split_machines_proportionally([{ "TargetOnPartition1" => { "TestClass1" => 1, "TestClass2" => 1 } }]) }.
+      to raise_error XCKnife::XCKnifeError, "There are 1 extra machines"
+  end
 
   context 'test_time_for_partitions' do
     it "partitions the test classes accross the number of machines" do

@@ -10,12 +10,13 @@ module XCKnife
 
     attr_reader :number_of_shards, :test_partitions, :stats, :relevant_partitions
 
-    def initialize(number_of_shards, test_partitions, options_for_metapartition: Array.new(test_partitions.size, {}))
+    def initialize(number_of_shards, test_partitions, options_for_metapartition: Array.new(test_partitions.size, {}), allow_fewer_shards: false)
       @number_of_shards = number_of_shards
       @test_partitions = test_partitions.map(&:to_set)
       @relevant_partitions = test_partitions.flatten.to_set
       @stats = ResultStats.new
       @options_for_metapartition = options_for_metapartition.map { |o| Options::DEFAULT.merge(o) }
+      @allow_fewer_shards = allow_fewer_shards
       ResultStats.members.each { |k| @stats[k] = 0 }
     end
 
@@ -112,7 +113,8 @@ module XCKnife
       partition_with_machines_list = partitions.each_with_index.map do |test_time_map, metapartition|
         options = @options_for_metapartition[metapartition]
         partition_time = 0
-        max_shard_count = options.max_shard_count || test_time_map.each_value.map(&:size).reduce(&:+) || 1
+        max_shard_count = test_time_map.each_value.map(&:size).reduce(&:+) || 1
+        max_shard_count = [max_shard_count, options.max_shard_count].min if options.max_shard_count
         each_duration(test_time_map) { |duration_in_milliseconds| partition_time += duration_in_milliseconds }
         n = [1 + (assignable_shards * partition_time.to_f / total).floor, max_shard_count].min
         used_shards += n
@@ -120,8 +122,9 @@ module XCKnife
       end
 
       fifo_with_machines_who_can_use_more_shards = partition_with_machines_list.select { |x| x.number_of_shards < x.max_shard_count}.sort_by(&:partition_time)
-      while (number_of_shards - used_shards) > 0
+      while number_of_shards > used_shards
         if fifo_with_machines_who_can_use_more_shards.empty?
+          break if @allow_fewer_shards
           raise XCKnife::XCKnifeError, "There are #{number_of_shards - used_shards} extra machines"
         end
         machine = fifo_with_machines_who_can_use_more_shards.pop
