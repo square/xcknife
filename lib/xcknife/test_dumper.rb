@@ -370,11 +370,7 @@ module XCKnife
     end
 
     def dylib_logfile_path
-      if @dylib_logfile_path then
-        @dylib_logfile_path
-      else
-        '/tmp/xcknife_testdumper_dylib.log'
-      end
+      @dylib_logfile_path ||= '/tmp/xcknife_testdumper_dylib.log'
     end
 
     def xctest_type(test_bundle)

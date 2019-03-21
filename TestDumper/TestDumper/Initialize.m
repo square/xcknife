@@ -7,12 +7,8 @@
 //
 
 @import Dispatch;
+@import Foundation;
 @import XCTest;
-
-
-
-
-@class NSSet, NSString, NSURL, NSUUID;
 
 @interface XCTestConfiguration : NSObject <NSSecureCoding>
 {
@@ -74,16 +70,20 @@
 // Logging
 FILE *logFile;
 
-void initializeLogFile(char *logFilePath)
+void initializeLogFile(const char *logFilePath)
 {
     logFile = fopen(logFilePath, "w");
 }
 
-void logDebug(NSString *msg)
+void logDebug(NSString *, ...) NS_FORMAT_FUNCTION(1, 2);
+void logDebug(NSString *msg, ...)
 {
     assert(logFile);
-    fprintf(logFile, "%s", msg.UTF8String);
-    fprintf(logFile, "\n");
+    va_list varargs;
+    va_start(varargs, msg);
+    msg = [[NSString alloc] initWithFormat:msg arguments:varargs];
+    va_end(varargs);
+    fprintf(logFile, "%s\n", msg.UTF8String);
     
     NSLog(@"%@", msg);
 }
@@ -92,16 +92,20 @@ void logInit()
 {
     logDebug(@"Starting TestDumper...");
     logDebug(@"Environment Variables:");
-    logDebug(NSProcessInfo.processInfo.environment.description);
+    logDebug(@"%@", NSProcessInfo.processInfo.environment.description);
     logDebug(@"Command Line Arguments:");
-    logDebug(NSProcessInfo.processInfo.arguments.description);
+    logDebug(@"%@", NSProcessInfo.processInfo.arguments.description);
     
     logDebug(@"--------------------------------");
 }
 
-void logEnd()
+OS_NORETURN
+void logEnd(Boolean success)
 {
-    logDebug(@"EndingTestDumper...");
+    int exitCode = success ? EXIT_SUCCESS : EXIT_FAILURE;
+    logDebug(@"EndingTestDumper...\nExiting with status %d", exitCode);
+    fclose(logFile);
+    exit(exitCode);
 }
 
 // Used for a structured log, just like Xctool's.
@@ -113,10 +117,10 @@ static void PrintJSON(FILE *outFile, id JSONObject)
 
     if (error) {
         fprintf(outFile, "{ \"message\" : \"Error while serializing to JSON. Check out simulator logs for details\" }");
-        NSLog(@"ERROR: Error generating JSON for object: %s: %s\n",
+        logDebug(@"ERROR: Error generating JSON for object: %s: %s\n",
                 [[JSONObject description] UTF8String],
                 [[error localizedFailureReason] UTF8String]);
-        exit(1);
+        logEnd(false);
     }
 
     fwrite([data bytes], 1, [data length], outFile);
@@ -146,7 +150,7 @@ static void PrintTestClass(FILE *outFile, NSString *testClass) {
                          @"totalDuration" : @"0"});
 }
 
-void enumerateTests();
+void enumerateTests(NSString *);
 
 const int TEST_TARGET_LEVEL = 0;
 const int TEST_CLASS_LEVEL = 1;
@@ -156,7 +160,7 @@ FILE *noteFile;
 __attribute__((constructor))
 void initialize() {
     NSLog(@"Starting TestDumper");
-    char *logFilePath = [[[NSProcessInfo processInfo] arguments][3] UTF8String];
+    const char *logFilePath = [[[NSProcessInfo processInfo] arguments][3] UTF8String];
     initializeLogFile(logFilePath);
     logInit();
     NSString *testBundlePath = [[NSProcessInfo processInfo] arguments][4];
@@ -164,11 +168,11 @@ void initialize() {
     NSFileManager *fileManager = [NSFileManager defaultManager];
 
     if ([fileManager fileExistsAtPath:testDumperOutputPath]) {
-        NSLog(@"File already exists %@. Stopping", testDumperOutputPath);
-        exit(0);
+        logDebug(@"File already exists %@. Stopping", testDumperOutputPath);
+        logEnd(true);
     }
-    NSString *testType = [NSString stringWithUTF8String: getenv("XCTEST_TYPE")];
 
+    NSString *testType = [NSString stringWithUTF8String: getenv("XCTEST_TYPE")];
     if ([testType isEqualToString: @"APPTEST"]) {
         [[NSNotificationCenter defaultCenter] addObserverForName:UIApplicationDidFinishLaunchingNotification object:nil queue:nil usingBlock:^(NSNotification * _Nonnull note) {
             enumerateTests(testBundlePath);
@@ -181,8 +185,7 @@ void initialize() {
 void enumerateTests(NSString *testBundlePath) {
     logDebug(@"Listing all test bundles");
     for (NSBundle *bundle in NSBundle.allBundles) {
-        NSString *string = [@"Found a test bundle named: " stringByAppendingString:bundle.bundlePath];
-        logDebug(string);
+        logDebug(@"Found a test bundle named: %@", bundle.bundlePath);
     }
     logDebug(@"Finished listing all test bundles");
     
@@ -192,19 +195,14 @@ void enumerateTests(NSString *testBundlePath) {
     
     logDebug(@"Listing all test bundles");
     for (NSBundle *bundle in NSBundle.allBundles) {
-        NSString *string = [@"Found a test bundle named: " stringByAppendingString:bundle.bundlePath];
-        logDebug(string);
+        logDebug(@"Found a test bundle named: %@", bundle.bundlePath);
     }
     logDebug(@"Finished listing all test bundles");
     
     NSString *testType = [NSString stringWithUTF8String: getenv("XCTEST_TYPE")];
     NSString *testTarget = [[[testBundlePath componentsSeparatedByString:@"/"] lastObject] componentsSeparatedByString:@"."][0];
     
-    logDebug(@"The test target is:");
-    logDebug(testTarget);
-    if ([testType isEqualToString: @"APPTEST"]) {
-        logDebug(@"IS APPTEST");
-    }
+    logDebug(@"The test target is: %@ of type %@", testTarget, testType);
     
     FILE *outFile;
     NSString *testDumperOutputPath = NSProcessInfo.processInfo.environment[@"TestDumperOutputPath"];
@@ -215,11 +213,10 @@ void enumerateTests(NSString *testBundlePath) {
         outFile = fopen(testDumperOutputPath.UTF8String, "w+");
     }
 
-    NSLog(@"Opened %@ with fd %p", testDumperOutputPath, outFile);
+    logDebug(@"Opened %@ with fd %p", testDumperOutputPath, outFile);
     if (outFile == NULL) {
-        logDebug(@"File already exists. Stopping");
-        NSLog(@"File already exists %@. Stopping", testDumperOutputPath);
-        exit(0);
+        logDebug(@"File already exists at %@. Stopping", testDumperOutputPath);
+        logEnd(true);
     }
     
     PrintDumpStart(outFile, testType);
@@ -227,8 +224,7 @@ void enumerateTests(NSString *testBundlePath) {
     [testSuite printTestsWithLevel:0 withTarget: testTarget withParent: nil outputFile:outFile];
     PrintDumpEnd(outFile, testType);
     fclose(outFile);
-    logEnd();
-    exit(0);
+    logEnd(true);
 }
 
 
@@ -251,7 +247,7 @@ void enumerateTests(NSString *testBundlePath) {
                 // nothing to do here
                 break;
             default:
-                NSLog(@"Uknown level %ld", level);
+                logDebug(@"Unknown test level %ld for test %@", level, t.debugDescription);
 
         }
         if (level == TEST_METHOD_LEVEL) {

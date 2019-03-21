@@ -78,6 +78,15 @@ describe "Test Dumper Acceptance", if: RUBY_PLATFORM.include?('darwin') do
   after(:each) do
     sh "xcrun simctl shutdown #{simulator_uuid}"
     sh "xcrun simctl delete #{simulator_uuid}"
+
+    expect(File.read('/tmp/xcknife_testdumper_dylib.log').split("\n"))
+      .to include("Starting TestDumper...")
+      .and include("Listing all test bundles")
+      .and include("test bundle loaded")
+      .and include("Found a test bundle named: #{__dir__}/xcknife-exemplar/derivedDataPath/Build/Products/Debug-iphonesimulator/XCKnifeExemplar.app/PlugIns/iPadTestTarget.xctest")
+      .and include("The test target is: iPadTestTarget of type APPTEST")
+      .and include("EndingTestDumper...")
+      .and include("Exiting with status 0")
   end
 
 
