@@ -1,6 +1,0 @@
-{
-  "specs": {
-    "post_build": ["bundle", "exec", "rake", "build_test_dumper", "spec"],
-    "xcode_version": "9.4.0"
-  }
-}

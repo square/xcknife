@@ -1,5 +1,4 @@
 require 'rspec/core/rake_task'
-require 'sq/gem_tasks'
 require 'fileutils'
 
 RSpec::Core::RakeTask.new(:spec)
