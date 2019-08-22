@@ -4,8 +4,7 @@ PATH
     xcknife (0.10.1)
 
 GEM
-  remote: https://gems.vip.global.square/
-  remote: https://gems.vip.global.square/private/
+  remote: https://rubygems.org/
   specs:
     diff-lcs (1.3)
     rake (11.1.2)
