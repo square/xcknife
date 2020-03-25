@@ -9,7 +9,7 @@ It works by leveraging [xctool's](https://github.com/facebook/xctool) [json-stre
 
 XCKnife generates a list of only arguments meant to be pass to Xctool's [*-only* test arguments](https://github.com/facebook/xctool#testing), but alternatively could used to generate multiple xcschemes with the proper test partitions.
 
-More information on XCKnife, go [here](https://corner.squareup.com/2016/06/xcknife-faster-distributed-tests-for-ios.html).
+More information on XCKnife, go [here](https://developer.squareup.com/blog/xcknife-faster-distributed-tests-for-ios).
  
 ## Install
 
