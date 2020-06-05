@@ -30,11 +30,12 @@ module XCKnife
       @logger = logger
       @logger.level = @debug ? Logger::DEBUG : Logger::FATAL
       @parser = nil
+      @simctl_timeout = 0
     end
 
     def run
       helper = TestDumperHelper.new(@device_id, @max_retry_count, @debug, @logger, @dylib_logfile_path,
-                                    naive_dump_bundle_names: @naive_dump_bundle_names, skip_dump_bundle_names: @skip_dump_bundle_names)
+                                    naive_dump_bundle_names: @naive_dump_bundle_names, skip_dump_bundle_names: @skip_dump_bundle_names, simctl_timeout: @simctl_timeout)
       extra_environment_variables = parse_scheme_file
       logger.info { "Environment variables from xcscheme: #{extra_environment_variables.pretty_inspect}" }
       output_fd = File.open(@output_file, "w")
@@ -93,6 +94,7 @@ module XCKnife
         opts.banner += " #{arguments_banner}"
         opts.on("-d", "--debug", "Debug mode enabled") { |v| @debug = v }
         opts.on("-r", "--retry-count COUNT", "Max retry count for simulator output", Integer) { |v| @max_retry_count = v }
+        opts.on("-x", '--simctl-timeout SECONDS', "Max allowed time in seconds for simctl commands", Integer) { |v| @simctl_timeout = v }
         opts.on("-t", "--temporary-output OUTPUT_FOLDER", "Sets temporary Output folder") { |v| @temporary_output_folder = v }
         opts.on("-s", "--scheme XCSCHEME_FILE", "Reads environments variables from the xcscheme file") { |v| @xcscheme_file = v }
         opts.on("-l", "--dylib_logfile DYLIB_LOG_FILE", "Path for dylib log file") { |v| @dylib_logfile_path = v }
@@ -111,7 +113,7 @@ module XCKnife
     end
 
     def optional_arguments
-      %w[device_id]
+      %w[device_id simctl_timeout]
     end
 
     def arguments_banner
@@ -150,7 +152,7 @@ module XCKnife
     attr_reader :logger
 
     def initialize(device_id, max_retry_count, debug, logger, dylib_logfile_path,
-                   naive_dump_bundle_names: [], skip_dump_bundle_names: [])
+                   naive_dump_bundle_names: [], skip_dump_bundle_names: [], simctl_timeout: 0)
       @xcode_path = `xcode-select -p`.strip
       @simctl_path = `xcrun -f simctl`.strip
       @nm_path = `xcrun -f nm`.strip
@@ -161,6 +163,7 @@ module XCKnife
       @testroot = nil
       @device_id = device_id
       @max_retry_count = max_retry_count
+      @simctl_timeout = simctl_timeout
       @logger = logger
       @debug = debug
       @dylib_logfile_path = dylib_logfile_path if dylib_logfile_path
@@ -294,6 +297,22 @@ module XCKnife
       @simctl_path
     end
 
+    def gtimeout
+      return nil unless @simctl_timeout > 0
+
+      path = gtimeout_path
+      if path.empty?
+        puts "warning: simctl_timeout specified but 'gtimeout' is not installed. The specified timeout will be ignored."
+        return nil
+      end
+
+      [path, "--foreground", "--preserve-status", "-k", "5", "#{@simctl_timeout}"]
+    end
+
+    def gtimeout_path
+      `which gtimeout`.strip
+    end
+
     def replace_vars(str, testhost = "<UNKNOWN>")
       str.gsub("__PLATFORMS__", @platforms_path).
         gsub("__TESTHOST__", testhost).
@@ -359,7 +378,8 @@ module XCKnife
     end
 
     def call_simctl(args, env: {}, **spawn_opts)
-      args = [simctl] + args
+
+      args = gtimeout + [simctl] + args
       cmd = Shellwords.shelljoin(args)
       puts "Running:\n$ #{cmd}"
       logger.info { "Environment variables:\n #{env.pretty_print_inspect}" }
