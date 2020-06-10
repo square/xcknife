@@ -130,9 +130,9 @@ describe XCKnife::TestDumperHelper do
   end
 
   describe "#gtimeout" do
-    it 'returns nil when simctl_timeout is zero' do
+    it 'returns an empty array when simctl_timeout is zero' do
       gtimeout = test_dumper_helper.send(:gtimeout)
-      expect(gtimeout).to be_nil
+      expect(gtimeout).to be_empty
     end
 
     it 'returns an array of arguments for gtimeout' do

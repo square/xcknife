@@ -298,22 +298,17 @@ module XCKnife
     end
 
     def wrapped_simctl(args)
-      args = [simctl] + args
-
-      unless gtimeout.nil?
-        args.prepend(gtimeout).flatten
-      end
-
+      args = [*gtimeout, simctl] + args
       args
     end
 
     def gtimeout
-      return nil unless @simctl_timeout > 0
+      return [] unless @simctl_timeout > 0
 
       path = gtimeout_path
       if path.empty?
         puts "warning: simctl_timeout specified but 'gtimeout' is not installed. The specified timeout will be ignored."
-        return nil
+        return []
       end
 
       [path, "-k", "5", "#{@simctl_timeout}"]
