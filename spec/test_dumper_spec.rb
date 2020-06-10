@@ -141,7 +141,27 @@ describe XCKnife::TestDumperHelper do
 
       gtimeout = new_dumper.send(:gtimeout)
       expect(gtimeout).to_not be_nil
-      expect(gtimeout.count).to eq(6)
+      expect(gtimeout.count).to eq(4)
+    end
+  end
+
+  describe "#wrapped_simctl" do
+    it 'prepends gtimeout to simctl command arguments' do
+      new_dumper = described_class.new(device_id, max_retry_count, debug, logger, dylib_logfile_path,
+        naive_dump_bundle_names: naive_dump_bundle_names, skip_dump_bundle_names: skip_dump_bundle_names, simctl_timeout: 1)
+      allow(new_dumper).to receive(:gtimeout_path).and_return("gtimeout")
+      allow(new_dumper).to receive(:simctl).and_return("simctl")
+      output = new_dumper.send(:wrapped_simctl, ["boot", "some_UUID"]).join(" ")
+
+      expect(output).to eq("gtimeout -k 5 1 simctl boot some_UUID")
+    end
+
+    it 'passes simctl commands transparently when no timeout provided' do
+      allow(test_dumper_helper).to receive(:gtimeout_path).and_return("gtimeout")
+      allow(test_dumper_helper).to receive(:simctl).and_return("simctl")
+      output = test_dumper_helper.send(:wrapped_simctl, ["boot", "some_UUID"]).join(" ")
+
+      expect(output).to eq("simctl boot some_UUID")
     end
   end
 

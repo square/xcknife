@@ -297,6 +297,16 @@ module XCKnife
       @simctl_path
     end
 
+    def wrapped_simctl(args)
+      args = [simctl] + args
+
+      unless gtimeout.nil?
+        args.prepend(gtimeout).flatten
+      end
+
+      args
+    end
+
     def gtimeout
       return nil unless @simctl_timeout > 0
 
@@ -306,7 +316,7 @@ module XCKnife
         return nil
       end
 
-      [path, "--foreground", "--preserve-status", "-k", "5", "#{@simctl_timeout}"]
+      [path, "-k", "5", "#{@simctl_timeout}"]
     end
 
     def gtimeout_path
@@ -378,8 +388,7 @@ module XCKnife
     end
 
     def call_simctl(args, env: {}, **spawn_opts)
-
-      args = gtimeout + [simctl] + args
+      args = wrapped_simctl(args)
       cmd = Shellwords.shelljoin(args)
       puts "Running:\n$ #{cmd}"
       logger.info { "Environment variables:\n #{env.pretty_print_inspect}" }
