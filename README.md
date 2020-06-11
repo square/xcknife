@@ -194,6 +194,14 @@ XCKnife uses only a few attributes of a json-stream file. If you are storing the
 
 `$ xcknife-min example/xcknife-exemplar-historical-data.json-stream minified.json-stream` 
 
+## Dependencies
+
+XCKnife requires the use of the `gtimeout` command, which is provided in the GNU coreutils brew package. If you don't already have them, they can be installed with the command:
+
+```
+brew install coreutils
+```
+
 ## Contributing
 
 Any contributors to the master *xcknife* repository must sign the

@@ -12,6 +12,7 @@ end
 describe XCKnife::TestDumperHelper do
   let(:device_id) { 'device_id' }
   let(:max_retry_count) { 2 }
+  let(:gtimeout) { 0 }
   let(:debug) { true }
   let(:logger) { instance_spy(Logger) }
   let(:dylib_logfile_path) { 'dylib_logfile_path' }
@@ -20,7 +21,7 @@ describe XCKnife::TestDumperHelper do
 
   subject(:test_dumper_helper) do
     described_class.new(device_id, max_retry_count, debug, logger, dylib_logfile_path,
-                        naive_dump_bundle_names: naive_dump_bundle_names, skip_dump_bundle_names: skip_dump_bundle_names)
+                        naive_dump_bundle_names: naive_dump_bundle_names, skip_dump_bundle_names: skip_dump_bundle_names, simctl_timeout: gtimeout)
   end
 
   describe '#list_tests' do
@@ -125,6 +126,53 @@ describe XCKnife::TestDumperHelper do
 {"test":"1","className":"SwiftTestClass","event":"end-test","totalDuration":"0"}
 {"message":"Completed Test Dumper","event":"end-action","testType":"LOGICTEST"}
       JSONSTREAM
+    end
+  end
+
+  describe "#gtimeout" do
+    it 'returns an empty array when simctl_timeout is zero' do
+      gtimeout = test_dumper_helper.send(:gtimeout)
+      expect(gtimeout).to be_empty
+    end
+
+    it 'returns an array of arguments for gtimeout' do
+      new_dumper = described_class.new(device_id, max_retry_count, debug, logger, dylib_logfile_path,
+        naive_dump_bundle_names: naive_dump_bundle_names, skip_dump_bundle_names: skip_dump_bundle_names, simctl_timeout: 1)
+
+      gtimeout = new_dumper.send(:gtimeout)
+      expect(gtimeout).to_not be_nil
+      expect(gtimeout.count).to eq(4)
+    end
+  end
+
+  describe "#wrapped_simctl" do
+    it 'prepends gtimeout to simctl command arguments' do
+      new_dumper = described_class.new(device_id, max_retry_count, debug, logger, dylib_logfile_path,
+        naive_dump_bundle_names: naive_dump_bundle_names, skip_dump_bundle_names: skip_dump_bundle_names, simctl_timeout: 1)
+      allow(new_dumper).to receive(:gtimeout_path).and_return("gtimeout")
+      allow(new_dumper).to receive(:simctl).and_return("simctl")
+      output = new_dumper.send(:wrapped_simctl, ["boot", "some_UUID"]).join(" ")
+
+      expect(output).to eq("gtimeout -k 5 1 simctl boot some_UUID")
+    end
+
+    it 'passes simctl commands transparently when no timeout provided' do
+      allow(test_dumper_helper).to receive(:gtimeout_path).and_return("gtimeout")
+      allow(test_dumper_helper).to receive(:simctl).and_return("simctl")
+      output = test_dumper_helper.send(:wrapped_simctl, ["boot", "some_UUID"]).join(" ")
+
+      expect(output).to eq("simctl boot some_UUID")
+    end
+  end
+
+  describe "#gtimeout_path" do
+    it 'returns an empty string if gtimeout is not installed' do
+      allow(test_dumper_helper).to receive(:gtimeout_path).and_return("")
+
+      gtimeout_path = test_dumper_helper.send(:gtimeout_path)
+      gtimeout_output = test_dumper_helper.send(:gtimeout)
+
+      expect(gtimeout_path).to eq("")
     end
   end
 end
