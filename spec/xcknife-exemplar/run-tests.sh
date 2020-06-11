@@ -1,5 +1,5 @@
 #!/bin/bash
-XC_DESTINATION='platform=iOS Simulator,name=iPad Air,OS=11.2'
+XC_DESTINATION='platform=iOS Simulator,name=iPad Air (3rd generation),OS=13.6'
 
 xcodebuild -project XCKnifeExemplar.xcodeproj \
     -configuration Debug \
