@@ -25,12 +25,12 @@ module XCKnife
       @parser = build_parser
       @naive_dump_bundle_names = []
       @skip_dump_bundle_names = []
+      @simctl_timeout = 0
       parse_arguments(args)
       @device_id ||= "booted"
       @logger = logger
       @logger.level = @debug ? Logger::DEBUG : Logger::FATAL
       @parser = nil
-      @simctl_timeout = 0
     end
 
     def run
