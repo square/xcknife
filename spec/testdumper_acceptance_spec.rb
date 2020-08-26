@@ -2,6 +2,10 @@ require 'spec_helper'
 require 'set'
 
 EXPECTED_OUTPUT = <<eof
+{"message":"Starting Test Dumper","event":"begin-test-suite","testType":"APPTEST"}
+{"event":"begin-ocunit","bundleName":"CommonTestTarget.xctest","targetName":"CommonTestTarget"}
+{"test":"1","className":"CommonTestClass","event":"end-test","totalDuration":"0"}
+{"message":"Completed Test Dumper","event":"end-action","testType":"APPTEST"}
 {"message":"Starting Test Dumper","event":"begin-test-suite","testType":"LOGICTEST"}
 {"event":"begin-ocunit","bundleName":"iPhoneTestTarget.xctest","targetName":"iPhoneTestTarget"}
 {"test":"1","className":"iPhoneTestClassAlpha","event":"end-test","totalDuration":"0"}
@@ -10,10 +14,6 @@ EXPECTED_OUTPUT = <<eof
 {"test":"1","className":"iPhoneTestClassGama","event":"end-test","totalDuration":"0"}
 {"test":"1","className":"iPhoneTestClassOmega","event":"end-test","totalDuration":"0"}
 {"message":"Completed Test Dumper","event":"end-action","testType":"LOGICTEST"}
-{"message":"Starting Test Dumper","event":"begin-test-suite","testType":"APPTEST"}
-{"event":"begin-ocunit","bundleName":"CommonTestTarget.xctest","targetName":"CommonTestTarget"}
-{"test":"1","className":"CommonTestClass","event":"end-test","totalDuration":"0"}
-{"message":"Completed Test Dumper","event":"end-action","testType":"APPTEST"}
 {"message":"Starting Test Dumper","event":"begin-test-suite","testType":"LOGICTEST"}
 {"event":"begin-ocunit","bundleName":"SwiftTestTarget.xctest","targetName":"SwiftTestTarget"}
 {"test":"1","className":"ObjCTestClass","event":"end-test","totalDuration":"0"}
@@ -56,8 +56,8 @@ describe "Test Dumper Acceptance", if: RUBY_PLATFORM.include?('darwin') do
 
   let(:simulator_uuid) do
     sim_name = "xcknife_test_dumper_#{Process.pid}"
-    sim_type = 'com.apple.CoreSimulator.SimDeviceType.iPad-Air'
-    sim_runtime = 'com.apple.CoreSimulator.SimRuntime.iOS-11-2'
+    sim_type = 'com.apple.CoreSimulator.SimDeviceType.iPad-Air--3rd-generation-'
+    sim_runtime = 'com.apple.CoreSimulator.SimRuntime.iOS-13-6'
     `xcrun simctl create #{sim_name} #{sim_type} #{sim_runtime}`.strip
   end
 

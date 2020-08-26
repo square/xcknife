@@ -1,6 +1,6 @@
 language: objective-c
-osx_image: xcode9.4
+osx_image: xcode11.6
 
 script:
-    - xcrun simctl list
-    - xcodebuild -project XCKnifeExemplar.xcodeproj -configuration Debug -scheme XCKnifeExemplar -sdk iphonesimulator -destination "platform=iOS Simulator,name=iPad Air,OS=11.2" test
+  - xcrun simctl list
+  - xcodebuild -project XCKnifeExemplar.xcodeproj -configuration Debug -scheme XCKnifeExemplar -sdk iphonesimulator -destination "platform=iOS Simulator,name=iPad Air (3rd generation),OS=13.6" test
