@@ -1,0 +1,44 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Run RSpec - all",
+            "type": "Ruby",
+            "request": "launch",
+            "cwd": "${workspaceRoot}",
+            "useBundler": true,
+            "pathToBundler": "BUNDLE_PATH",
+            "program": "RSPEC_PATH",
+            "args": [
+                "--pattern",
+                "${workspaceRoot}/spec/**/*_spec.rb"
+            ]
+        },
+        {
+            "name": "Debug RSpec - open spec file",
+            "type": "Ruby",
+            "request": "launch",
+            "cwd": "${workspaceRoot}",
+            "useBundler": true,
+            "pathToBundler": "BUNDLE_PATH",
+            "pathToRDebugIDE": "RDEBUG_PATH",
+            "debuggerPort": "1235",
+            "program": "RSPEC_PATH",
+            "args": [
+                "${file}"
+            ]
+        },
+        {
+          "name": "Debug RSpec - open spec file & current line",
+          "type": "Ruby",
+          "request": "launch",
+          "cwd": "${workspaceRoot}",
+          "useBundler": true,
+          "pathToBundler": "BUNDLE_PATH",
+          "pathToRDebugIDE": "RDEBUG_PATH",
+          "debuggerPort": "1235",
+          "program": "RSPEC_PATH",
+          "args": ["${file}:${lineNumber}"]
+        }
+    ]
+}

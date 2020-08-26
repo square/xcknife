@@ -35,7 +35,7 @@ DEPENDENCIES
   debase
   rake (~> 13.0.1)
   rspec (~> 3.9.0)
-  ruby-debug-ide
+  ruby-debug-ide (~> 0.7.2)
   xcknife!
 
 BUNDLED WITH

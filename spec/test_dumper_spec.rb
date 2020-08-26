@@ -42,7 +42,7 @@ describe XCKnife::TestDumperHelper do
       expect(test_dumper_helper).to receive(:wait_test_dumper_completion).with(other_test_specification.json_stream_file)
 
       expect(test_dumper_helper.send(:list_tests, xctestrun, list_folder, extra_environment_variables)).
-        to eq [naive_test_specification, other_test_specification]
+        to eq [other_test_specification, naive_test_specification]
     end
 
     it 'skips dumping given bundles' do
