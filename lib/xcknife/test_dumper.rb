@@ -205,6 +205,7 @@ module XCKnife
       test_runs_by_method = test_groups(xctestrun)
       spec_queue = Queue.new
       nm_bundle_queue = Queue.new
+      results = []
       single_tests = test_runs_by_method['single'] || []
       nm_tests = test_runs_by_method['nm'] || []
       simctl_tests = test_runs_by_method['simctl'] || []
@@ -224,20 +225,21 @@ module XCKnife
       nm_tests.each { |item| nm_bundle_queue << item }
 
       [Etc.nprocessors, nm_bundle_queue.size].min.times.map do
+        nm_bundle_queue << :stop
+
         Thread.new do
           Thread.current.abort_on_exception = true
 
-          until nm_bundle_queue.empty?
-            test_bundle_name, test_bundle = nm_bundle_queue.pop
+          until (item = nm_bundle_queue.pop) == :stop
+            test_bundle_name, test_bundle = item
             spec_queue << list_tests_with_nm(list_folder, test_bundle, test_bundle_name)
           end
         end
       end.each(&:join)
 
-      result = []
-      result << spec_queue.pop until spec_queue.empty?
+      results << spec_queue.pop until spec_queue.empty?
 
-      result
+      results
     end
 
     def list_tests_with_simctl(list_folder, test_bundle, test_bundle_name, extra_environment_variables)
