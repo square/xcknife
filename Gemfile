@@ -7,7 +7,7 @@ group :development, :test do
 
   group :debug_vscode do
     gem 'debase'
-    gem 'ruby-debug-ide'
+    gem 'ruby-debug-ide', '~> 0.7.2'
   end
 end
 

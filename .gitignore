@@ -9,4 +9,5 @@ TestDumper/TestDumper.dylib
 *.tmp
 .bin/
 .bundle/
+
 .vscode/launch.json
