@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'json'
 require 'pp'
 require 'fileutils'
@@ -45,13 +47,9 @@ module XCKnife
           list_tests(extra_environment_variables, helper, outfolder, output_fd)
         end
       else
-        unless File.directory?(@temporary_output_folder)
-          raise TestDumpError, "Error no such directory: #{@temporary_output_folder}"
-        end
+        raise TestDumpError, "Error no such directory: #{@temporary_output_folder}" unless File.directory?(@temporary_output_folder)
 
-        if Dir.entries(@temporary_output_folder).any? { |f| File.file?(File.join(@temporary_output_folder, f)) }
-          puts "Warning: #{@temporary_output_folder} is not empty! Files can be overwritten."
-        end
+        puts "Warning: #{@temporary_output_folder} is not empty! Files can be overwritten." if Dir.entries(@temporary_output_folder).any? { |f| File.file?(File.join(@temporary_output_folder, f)) }
         list_tests(extra_environment_variables, helper, File.absolute_path(@temporary_output_folder), output_fd)
       end
       output_fd.close
@@ -75,9 +73,7 @@ module XCKnife
 
     def parse_arguments(args)
       positional_arguments = parse_options(args)
-      if positional_arguments.size < required_arguments.size
-        warn_and_exit("You must specify *all* required arguments: #{required_arguments.join(', ')}")
-      end
+      warn_and_exit("You must specify *all* required arguments: #{required_arguments.join(', ')}") if positional_arguments.size < required_arguments.size
       @derived_data_folder, @output_file, @device_id = positional_arguments
     end
 
@@ -126,7 +122,7 @@ module XCKnife
     def concat_to_file(test_specification, output_fd)
       file = test_specification.json_stream_file
       IO.readlines(file).each do |line|
-        event = OpenStruct.new(JSON.load(line))
+        event = OpenStruct.new(JSON.parse(line))
         if should_test_event_be_ignored?(test_specification, event)
           logger.info "Skipped test dumper line #{line}"
         else
@@ -150,6 +146,7 @@ module XCKnife
 
     attr_reader :logger
 
+    # rubocop:disable Metrics/ParameterLists
     def initialize(device_id, max_retry_count, debug, logger, dylib_logfile_path,
                    naive_dump_bundle_names: [], skip_dump_bundle_names: [], simctl_timeout: 0)
       @xcode_path = `xcode-select -p`.strip
@@ -169,6 +166,7 @@ module XCKnife
       @naive_dump_bundle_names = naive_dump_bundle_names
       @skip_dump_bundle_names = skip_dump_bundle_names
     end
+    # rubocop:enable Metrics/ParameterLists
 
     def call(derived_data_folder, list_folder, extra_environment_variables = {})
       @testroot = File.join(derived_data_folder, 'Build', 'Products')
@@ -177,7 +175,7 @@ module XCKnife
 
       xctestrun_as_json = `plutil -convert json -o - "#{xctestrun_file}"`
       FileUtils.mkdir_p(list_folder)
-      list_tests(JSON.load(xctestrun_as_json), list_folder, extra_environment_variables)
+      list_tests(JSON.parse(xctestrun_as_json), list_folder, extra_environment_variables)
     end
 
     private
@@ -199,6 +197,7 @@ module XCKnife
     # This executes naive test dumping in parallel by queueing up items onto a work queue to process
     # with 1 new thread per processor. Results are placed onto a threadsafe spec queue to avoid writing
     # to an object between threads, then popped off re-inserting them to our list of test results.
+    # rubocop:disable Metrics/CyclomaticComplexity
     def list_tests(xctestrun, list_folder, extra_environment_variables)
       xctestrun.reject! { |test_bundle_name, _| test_bundle_name == '__xctestrun_metadata__' }
 
@@ -241,6 +240,7 @@ module XCKnife
 
       results
     end
+    # rubocop:enable Metrics/CyclomaticComplexity
 
     def list_tests_with_simctl(list_folder, test_bundle, test_bundle_name, extra_environment_variables)
       env_variables = test_bundle['EnvironmentVariables']
@@ -291,7 +291,7 @@ module XCKnife
         methods = []
         swift_demangled_nm(test_bundle_path) do |output|
           output.each_line do |line|
-            next unless method = method_from_nm_line(line)
+            next unless (method = method_from_nm_line(line))
 
             methods << method
           end
@@ -338,12 +338,11 @@ module XCKnife
     end
 
     def wrapped_simctl(args)
-      args = [*gtimeout, simctl] + args
-      args
+      [*gtimeout, simctl] + args
     end
 
     def gtimeout
-      return [] unless @simctl_timeout > 0
+      return [] unless @simctl_timeout.positive?
 
       path = gtimeout_path
       if path.empty?
@@ -391,7 +390,7 @@ module XCKnife
 
     def wait_test_dumper_completion(file)
       retries_count = 0
-      until has_test_dumper_terminated?(file)
+      until test_dumper_terminated?(file)
         retries_count += 1
         raise TestDumpError, "Timeout error on: #{file}" if retries_count == @max_retry_count
 
@@ -399,7 +398,7 @@ module XCKnife
       end
     end
 
-    def has_test_dumper_terminated?(file)
+    def test_dumper_terminated?(file)
       return false unless File.exist?(file)
 
       last_line = `tail -n 1 "#{file}"`
@@ -407,16 +406,16 @@ module XCKnife
     end
 
     def run_apptest(env, test_host_bundle_identifier, test_bundle_path)
-      unless call_simctl(['launch', @device_id, test_host_bundle_identifier, '-XCTest', 'All', dylib_logfile_path, test_bundle_path], env: env)
-        raise TestDumpError, "Launching #{test_bundle_path} in #{test_host_bundle_identifier} failed"
-      end
+      return if call_simctl(['launch', @device_id, test_host_bundle_identifier, '-XCTest', 'All', dylib_logfile_path, test_bundle_path], env: env)
+
+      raise TestDumpError, "Launching #{test_bundle_path} in #{test_host_bundle_identifier} failed"
     end
 
     def run_logic_test(env, test_host, test_bundle_path)
       opts = @debug ? {} : { err: '/dev/null' }
-      unless call_simctl(['spawn', @device_id, test_host, '-XCTest', 'All', dylib_logfile_path, test_bundle_path], env: env, **opts)
-        raise TestDumpError, "Spawning #{test_bundle_path} in #{test_host} failed"
-      end
+      return if call_simctl(['spawn', @device_id, test_host, '-XCTest', 'All', dylib_logfile_path, test_bundle_path], env: env, **opts)
+
+      raise TestDumpError, "Spawning #{test_bundle_path} in #{test_host} failed"
     end
 
     def call_simctl(args, env: {}, **spawn_opts)
@@ -442,10 +441,8 @@ module XCKnife
       end
     end
 
-    def swift_demangled_nm(test_bundle_path)
-      Open3.pipeline_r([@nm_path, File.join(test_bundle_path, File.basename(test_bundle_path, '.xctest'))], [@swift_path, 'demangle']) do |o, _ts|
-        yield(o)
-      end
+    def swift_demangled_nm(test_bundle_path, &block)
+      Open3.pipeline_r([@nm_path, File.join(test_bundle_path, File.basename(test_bundle_path, '.xctest'))], [@swift_path, 'demangle'], &block)
     end
 
     def method_from_nm_line(line)
@@ -457,7 +454,7 @@ module XCKnife
           | # or swift instance method
             _? # only present on Xcode 10.0 and below
             (?:@objc\s)? # optional objc annotation
-            (?:[^\.]+\.)? # module name
+            (?:[^.]+\.)? # module name
             (.+) # class name
             \.(test.+)\s->\s\(\) # method signature
         )

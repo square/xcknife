@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'set'
 
 module XCKnife
@@ -5,12 +7,14 @@ module XCKnife
     def only_arguments_for_a_partition_set(output_type, partition_set)
       method = "#{output_type}_only_arguments_for_a_partition_set"
       raise "Unknown output_type: #{output_type}" unless respond_to?(method)
+
       __send__(method, partition_set)
     end
 
     def only_arguments(output_type, partition)
       method = "#{output_type}_only_arguments"
       raise "Unknown output_type: #{output_type}" unless respond_to?(method)
+
       __send__(method, partition)
     end
 
@@ -25,11 +29,18 @@ module XCKnife
     end
 
     # only-testing is available since Xcode 8
+    # rubocop:disable Metrics/CyclomaticComplexity
     def xcodebuild_only_arguments(single_partition, meta_partition = nil)
-      only_targets = if meta_partition
-        single_partition.keys.to_set & meta_partition.flat_map(&:keys).group_by(&:to_s).select{|_,v| v.size == 1 }.map(&:first).to_set
-      else
-        Set.new
+      only_targets = Set.new
+
+      if meta_partition
+        filtered = meta_partition.flat_map(&:keys)
+                                 .group_by(&:to_s)
+                                 .select { |_, v| v.size == 1 }
+                                 .map(&:first)
+                                 .to_set
+
+        only_targets = single_partition.keys.to_set & filtered
       end
 
       only_target_arguments = only_targets.sort.map { |test_target| "-only-testing:#{test_target}" }
@@ -62,4 +73,5 @@ module XCKnife
       partition_set.map { |partition| xctool_only_arguments(partition) }
     end
   end
+  # rubocop:enable Metrics/CyclomaticComplexity
 end

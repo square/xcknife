@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'xcknife/events_analyzer'
 require 'xcknife/stream_parser'
 require 'xcknife/xctool_cmd_helper'

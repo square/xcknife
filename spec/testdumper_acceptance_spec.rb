@@ -1,32 +1,34 @@
+# frozen_string_literal: true
+
 require 'spec_helper'
 require 'set'
 
-EXPECTED_OUTPUT = <<~eof.freeze
-   {"message":"Starting Test Dumper","event":"begin-test-suite","testType":"APPTEST"}
-   {"event":"begin-ocunit","bundleName":"CommonTestTarget.xctest","targetName":"CommonTestTarget"}
-   {"test":"1","className":"CommonTestClass","event":"end-test","totalDuration":"0"}
-   {"message":"Completed Test Dumper","event":"end-action","testType":"APPTEST"}
-   {"message":"Starting Test Dumper","event":"begin-test-suite","testType":"LOGICTEST"}
-   {"event":"begin-ocunit","bundleName":"iPhoneTestTarget.xctest","targetName":"iPhoneTestTarget"}
-   {"test":"1","className":"iPhoneTestClassAlpha","event":"end-test","totalDuration":"0"}
-   {"test":"1","className":"iPhoneTestClassBeta","event":"end-test","totalDuration":"0"}
-   {"test":"1","className":"iPhoneTestClassDelta","event":"end-test","totalDuration":"0"}
-   {"test":"1","className":"iPhoneTestClassGama","event":"end-test","totalDuration":"0"}
-   {"test":"1","className":"iPhoneTestClassOmega","event":"end-test","totalDuration":"0"}
-   {"message":"Completed Test Dumper","event":"end-action","testType":"LOGICTEST"}
-   {"message":"Starting Test Dumper","event":"begin-test-suite","testType":"LOGICTEST"}
-   {"event":"begin-ocunit","bundleName":"SwiftTestTarget.xctest","targetName":"SwiftTestTarget"}
-   {"test":"1","className":"ObjCTestClass","event":"end-test","totalDuration":"0"}
-   {"test":"1","className":"SwiftTestTarget","event":"end-test","totalDuration":"0"}
-   {"message":"Completed Test Dumper","event":"end-action","testType":"LOGICTEST"}
-   {"message":"Starting Test Dumper","event":"begin-test-suite","testType":"APPTEST"}
-   {"event":"begin-ocunit","bundleName":"iPadTestTarget.xctest","targetName":"iPadTestTarget"}
-   {"test":"1","className":"iPadTestClassFour","event":"end-test","totalDuration":"0"}
-   {"test":"1","className":"iPadTestClassOne","event":"end-test","totalDuration":"0"}
-   {"test":"1","className":"iPadTestClassThree","event":"end-test","totalDuration":"0"}
-   {"test":"1","className":"iPadTestClassTwo","event":"end-test","totalDuration":"0"}
-   {"message":"Completed Test Dumper","event":"end-action","testType":"APPTEST"}
- eof
+EXPECTED_OUTPUT = <<~DUMP_OUTPUT
+  {"message":"Starting Test Dumper","event":"begin-test-suite","testType":"APPTEST"}
+  {"event":"begin-ocunit","bundleName":"CommonTestTarget.xctest","targetName":"CommonTestTarget"}
+  {"test":"1","className":"CommonTestClass","event":"end-test","totalDuration":"0"}
+  {"message":"Completed Test Dumper","event":"end-action","testType":"APPTEST"}
+  {"message":"Starting Test Dumper","event":"begin-test-suite","testType":"LOGICTEST"}
+  {"event":"begin-ocunit","bundleName":"iPhoneTestTarget.xctest","targetName":"iPhoneTestTarget"}
+  {"test":"1","className":"iPhoneTestClassAlpha","event":"end-test","totalDuration":"0"}
+  {"test":"1","className":"iPhoneTestClassBeta","event":"end-test","totalDuration":"0"}
+  {"test":"1","className":"iPhoneTestClassDelta","event":"end-test","totalDuration":"0"}
+  {"test":"1","className":"iPhoneTestClassGama","event":"end-test","totalDuration":"0"}
+  {"test":"1","className":"iPhoneTestClassOmega","event":"end-test","totalDuration":"0"}
+  {"message":"Completed Test Dumper","event":"end-action","testType":"LOGICTEST"}
+  {"message":"Starting Test Dumper","event":"begin-test-suite","testType":"LOGICTEST"}
+  {"event":"begin-ocunit","bundleName":"SwiftTestTarget.xctest","targetName":"SwiftTestTarget"}
+  {"test":"1","className":"ObjCTestClass","event":"end-test","totalDuration":"0"}
+  {"test":"1","className":"SwiftTestTarget","event":"end-test","totalDuration":"0"}
+  {"message":"Completed Test Dumper","event":"end-action","testType":"LOGICTEST"}
+  {"message":"Starting Test Dumper","event":"begin-test-suite","testType":"APPTEST"}
+  {"event":"begin-ocunit","bundleName":"iPadTestTarget.xctest","targetName":"iPadTestTarget"}
+  {"test":"1","className":"iPadTestClassFour","event":"end-test","totalDuration":"0"}
+  {"test":"1","className":"iPadTestClassOne","event":"end-test","totalDuration":"0"}
+  {"test":"1","className":"iPadTestClassThree","event":"end-test","totalDuration":"0"}
+  {"test":"1","className":"iPadTestClassTwo","event":"end-test","totalDuration":"0"}
+  {"message":"Completed Test Dumper","event":"end-action","testType":"APPTEST"}
+DUMP_OUTPUT
 
 describe 'Test Dumper Acceptance', if: RUBY_PLATFORM.include?('darwin') do
   def sh(str)
@@ -103,6 +105,6 @@ describe 'Test Dumper Acceptance', if: RUBY_PLATFORM.include?('darwin') do
 
     # Test dumper outputs tests enumerated by nm by threading, check for their presence rather than their exact order
     output_lines = IO.read(outpath).lines
-    EXPECTED_OUTPUT.lines.each { |line|  expect(output_lines).to include(line) }
+    EXPECTED_OUTPUT.lines.each { |line| expect(output_lines).to include(line) }
   end
 end

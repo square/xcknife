@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'spec_helper'
 
 describe XCKnife::TestDumper do
@@ -28,42 +30,42 @@ describe XCKnife::TestDumperHelper do
     it 'uses naive_dump_bundle_names to determine how to list tests' do
       xctestrun = {
         'NaiveBundle' => :test_bundle_naive,
-        'OtherBundle' => :test_bundle_other,
+        'OtherBundle' => :test_bundle_other
       }
       list_folder = 'list_folder'
       extra_environment_variables = {}
 
       expect(test_dumper_helper).to receive(:list_tests_with_nm).once
-        .with(list_folder, :test_bundle_naive, 'NaiveBundle')
-        .and_return(naive_test_specification = XCKnife::TestDumperHelper::TestSpecification.new('naive/json_stream_file'))
+                                                                .with(list_folder, :test_bundle_naive, 'NaiveBundle')
+                                                                .and_return(naive_test_specification = XCKnife::TestDumperHelper::TestSpecification.new('naive/json_stream_file'))
       expect(test_dumper_helper).to receive(:list_tests_with_simctl).once
-        .with(list_folder, :test_bundle_other, 'OtherBundle', extra_environment_variables)
-        .and_return(other_test_specification = XCKnife::TestDumperHelper::TestSpecification.new('other/json_stream_file'))
+                                                                    .with(list_folder, :test_bundle_other, 'OtherBundle', extra_environment_variables)
+                                                                    .and_return(other_test_specification = XCKnife::TestDumperHelper::TestSpecification.new('other/json_stream_file'))
       expect(test_dumper_helper).to receive(:wait_test_dumper_completion).with(other_test_specification.json_stream_file)
 
-      expect(test_dumper_helper.send(:list_tests, xctestrun, list_folder, extra_environment_variables)).
-        to eq [other_test_specification, naive_test_specification]
+      expect(test_dumper_helper.send(:list_tests, xctestrun, list_folder, extra_environment_variables))
+        .to eq [other_test_specification, naive_test_specification]
     end
 
     it 'skips dumping given bundles' do
       xctestrun = {
         'SkipBundle' => :test_bundle_skip,
-        'OtherBundle' => :test_bundle_other,
+        'OtherBundle' => :test_bundle_other
       }
       list_folder = 'list_folder'
       extra_environment_variables = {}
 
       expect(test_dumper_helper).to receive(:list_tests_with_nm).never
       expect(test_dumper_helper).to receive(:list_tests_with_simctl).once
-        .with(list_folder, :test_bundle_other, 'OtherBundle', extra_environment_variables)
-        .and_return(other_test_specification = XCKnife::TestDumperHelper::TestSpecification.new('other/json_stream_file'))
+                                                                    .with(list_folder, :test_bundle_other, 'OtherBundle', extra_environment_variables)
+                                                                    .and_return(other_test_specification = XCKnife::TestDumperHelper::TestSpecification.new('other/json_stream_file'))
       expect(test_dumper_helper).to receive(:list_single_test).once
-        .with(list_folder, :test_bundle_skip, 'SkipBundle')
-        .and_return(skip_test_specification = XCKnife::TestDumperHelper::TestSpecification.new('skip/json_stream_file'))
+                                                              .with(list_folder, :test_bundle_skip, 'SkipBundle')
+                                                              .and_return(skip_test_specification = XCKnife::TestDumperHelper::TestSpecification.new('skip/json_stream_file'))
       expect(test_dumper_helper).to receive(:wait_test_dumper_completion).with(other_test_specification.json_stream_file)
 
-      expect(test_dumper_helper.send(:list_tests, xctestrun, list_folder, extra_environment_variables)).
-        to eq [skip_test_specification, other_test_specification]
+      expect(test_dumper_helper.send(:list_tests, xctestrun, list_folder, extra_environment_variables))
+        .to eq [skip_test_specification, other_test_specification]
     end
   end
 
@@ -77,59 +79,59 @@ describe XCKnife::TestDumperHelper do
     let(:test_bundle) do
       {
         'TestBundlePath' => 'test_bundle_path.xctest',
-        'TestHostPath' => 'test_host_path',
+        'TestHostPath' => 'test_host_path'
       }
     end
     let(:test_bundle_name) { 'test_bundle_name' }
 
     before { allow(test_dumper_helper).to receive(:testroot).and_return(testroot) }
 
-    it "uses nm to find test classes" do
+    it 'uses nm to find test classes' do
       expect(test_dumper_helper).to receive(:swift_demangled_nm)
         .with('test_bundle_path.xctest')
-        .and_yield <<-OTOOL
-0000000000001c10 t -[iPhoneTestClassAlpha testAres]
-0000000000002d50 t -[iPhoneTestClassBeta testArtemis]
-0000000000001650 t -[iPhoneTestClassDelta testApollo]
-00000000000021d0 t -[iPhoneTestClassGama testPoseidon]
-0000000000002790 t -[iPhoneTestClassOmega testZeus]
-0000000000003950 s GCC_except_table0
-                  U _OBJC_CLASS_$_NSString
-0000000000004598 S _OBJC_CLASS_$_iPhoneTestClassAlpha
-0000000000004570 S _OBJC_METACLASS_$_iPhoneTestClassAlpha
-00000000000016d0 t -[CommonTestClass testCommonOne]
-0000000000002250 t -[CommonTestClass testCommonThree]
-0000000000001c90 t -[CommonTestClass testCommonTwo]
-00000000000028d0 s GCC_except_table0
-0000000000002a30 s GCC_except_table1
-0000000000002b90 s GCC_except_table2
-0000000000003258 S _OBJC_CLASS_$_CommonTestClass
-000000000c003258 t -[iPhoneTestClassOmega helperTestThing]
-000000000d003258 t +[iPhoneTestClassOmega helperTestThing]
-000000000d003258 t +[iPhoneTestClassZeta helperTestThing]
-00000000000017b0 T _SwiftTestTarget.SwiftTestClass.testExample() -> ()
-00000000000017c0 t _@objc SwiftTestTarget.SwiftTestClass.testExample() -> ()
-0000000000001a70 T _SwiftTestTarget.ABC.foo() -> Swift.String
+        .and_yield <<~OTOOL
+          0000000000001c10 t -[iPhoneTestClassAlpha testAres]
+          0000000000002d50 t -[iPhoneTestClassBeta testArtemis]
+          0000000000001650 t -[iPhoneTestClassDelta testApollo]
+          00000000000021d0 t -[iPhoneTestClassGama testPoseidon]
+          0000000000002790 t -[iPhoneTestClassOmega testZeus]
+          0000000000003950 s GCC_except_table0
+                            U _OBJC_CLASS_$_NSString
+          0000000000004598 S _OBJC_CLASS_$_iPhoneTestClassAlpha
+          0000000000004570 S _OBJC_METACLASS_$_iPhoneTestClassAlpha
+          00000000000016d0 t -[CommonTestClass testCommonOne]
+          0000000000002250 t -[CommonTestClass testCommonThree]
+          0000000000001c90 t -[CommonTestClass testCommonTwo]
+          00000000000028d0 s GCC_except_table0
+          0000000000002a30 s GCC_except_table1
+          0000000000002b90 s GCC_except_table2
+          0000000000003258 S _OBJC_CLASS_$_CommonTestClass
+          000000000c003258 t -[iPhoneTestClassOmega helperTestThing]
+          000000000d003258 t +[iPhoneTestClassOmega helperTestThing]
+          000000000d003258 t +[iPhoneTestClassZeta helperTestThing]
+          00000000000017b0 T _SwiftTestTarget.SwiftTestClass.testExample() -> ()
+          00000000000017c0 t _@objc SwiftTestTarget.SwiftTestClass.testExample() -> ()
+          0000000000001a70 T _SwiftTestTarget.ABC.foo() -> Swift.String
         OTOOL
 
       test_specification = test_dumper_helper.send(:list_tests_with_nm, list_folder, test_bundle, test_bundle_name)
       expect(test_specification).to eq XCKnife::TestDumperHelper::TestSpecification.new(json_stream_file, Set.new)
-      expect(File.read(json_stream_file)).to eq <<-JSONSTREAM
-{"message":"Starting Test Dumper","event":"begin-test-suite","testType":"LOGICTEST"}
-{"event":"begin-ocunit","bundleName":"test_bundle_path.xctest","targetName":"test_bundle_name"}
-{"test":"1","className":"iPhoneTestClassAlpha","event":"end-test","totalDuration":"0"}
-{"test":"1","className":"iPhoneTestClassBeta","event":"end-test","totalDuration":"0"}
-{"test":"1","className":"iPhoneTestClassDelta","event":"end-test","totalDuration":"0"}
-{"test":"1","className":"iPhoneTestClassGama","event":"end-test","totalDuration":"0"}
-{"test":"1","className":"iPhoneTestClassOmega","event":"end-test","totalDuration":"0"}
-{"test":"1","className":"CommonTestClass","event":"end-test","totalDuration":"0"}
-{"test":"1","className":"SwiftTestClass","event":"end-test","totalDuration":"0"}
-{"message":"Completed Test Dumper","event":"end-action","testType":"LOGICTEST"}
+      expect(File.read(json_stream_file)).to eq <<~JSONSTREAM
+        {"message":"Starting Test Dumper","event":"begin-test-suite","testType":"LOGICTEST"}
+        {"event":"begin-ocunit","bundleName":"test_bundle_path.xctest","targetName":"test_bundle_name"}
+        {"test":"1","className":"iPhoneTestClassAlpha","event":"end-test","totalDuration":"0"}
+        {"test":"1","className":"iPhoneTestClassBeta","event":"end-test","totalDuration":"0"}
+        {"test":"1","className":"iPhoneTestClassDelta","event":"end-test","totalDuration":"0"}
+        {"test":"1","className":"iPhoneTestClassGama","event":"end-test","totalDuration":"0"}
+        {"test":"1","className":"iPhoneTestClassOmega","event":"end-test","totalDuration":"0"}
+        {"test":"1","className":"CommonTestClass","event":"end-test","totalDuration":"0"}
+        {"test":"1","className":"SwiftTestClass","event":"end-test","totalDuration":"0"}
+        {"message":"Completed Test Dumper","event":"end-action","testType":"LOGICTEST"}
       JSONSTREAM
     end
   end
 
-  describe "#gtimeout" do
+  describe '#gtimeout' do
     it 'returns an empty array when simctl_timeout is zero' do
       gtimeout = test_dumper_helper.send(:gtimeout)
       expect(gtimeout).to be_empty
@@ -137,7 +139,7 @@ describe XCKnife::TestDumperHelper do
 
     it 'returns an array of arguments for gtimeout' do
       new_dumper = described_class.new(device_id, max_retry_count, debug, logger, dylib_logfile_path,
-        naive_dump_bundle_names: naive_dump_bundle_names, skip_dump_bundle_names: skip_dump_bundle_names, simctl_timeout: 1)
+                                       naive_dump_bundle_names: naive_dump_bundle_names, skip_dump_bundle_names: skip_dump_bundle_names, simctl_timeout: 1)
 
       gtimeout = new_dumper.send(:gtimeout)
       expect(gtimeout).to_not be_nil
@@ -145,34 +147,33 @@ describe XCKnife::TestDumperHelper do
     end
   end
 
-  describe "#wrapped_simctl" do
+  describe '#wrapped_simctl' do
     it 'prepends gtimeout to simctl command arguments' do
       new_dumper = described_class.new(device_id, max_retry_count, debug, logger, dylib_logfile_path,
-        naive_dump_bundle_names: naive_dump_bundle_names, skip_dump_bundle_names: skip_dump_bundle_names, simctl_timeout: 1)
-      allow(new_dumper).to receive(:gtimeout_path).and_return("gtimeout")
-      allow(new_dumper).to receive(:simctl).and_return("simctl")
-      output = new_dumper.send(:wrapped_simctl, ["boot", "some_UUID"]).join(" ")
+                                       naive_dump_bundle_names: naive_dump_bundle_names, skip_dump_bundle_names: skip_dump_bundle_names, simctl_timeout: 1)
+      allow(new_dumper).to receive(:gtimeout_path).and_return('gtimeout')
+      allow(new_dumper).to receive(:simctl).and_return('simctl')
+      output = new_dumper.send(:wrapped_simctl, %w[boot some_UUID]).join(' ')
 
-      expect(output).to eq("gtimeout -k 5 1 simctl boot some_UUID")
+      expect(output).to eq('gtimeout -k 5 1 simctl boot some_UUID')
     end
 
     it 'passes simctl commands transparently when no timeout provided' do
-      allow(test_dumper_helper).to receive(:gtimeout_path).and_return("gtimeout")
-      allow(test_dumper_helper).to receive(:simctl).and_return("simctl")
-      output = test_dumper_helper.send(:wrapped_simctl, ["boot", "some_UUID"]).join(" ")
+      allow(test_dumper_helper).to receive(:gtimeout_path).and_return('gtimeout')
+      allow(test_dumper_helper).to receive(:simctl).and_return('simctl')
+      output = test_dumper_helper.send(:wrapped_simctl, %w[boot some_UUID]).join(' ')
 
-      expect(output).to eq("simctl boot some_UUID")
+      expect(output).to eq('simctl boot some_UUID')
     end
   end
 
-  describe "#gtimeout_path" do
+  describe '#gtimeout_path' do
     it 'returns an empty string if gtimeout is not installed' do
-      allow(test_dumper_helper).to receive(:gtimeout_path).and_return("")
+      allow(test_dumper_helper).to receive(:gtimeout_path).and_return('')
 
       gtimeout_path = test_dumper_helper.send(:gtimeout_path)
-      gtimeout_output = test_dumper_helper.send(:gtimeout)
 
-      expect(gtimeout_path).to eq("")
+      expect(gtimeout_path).to eq('')
     end
   end
 end
