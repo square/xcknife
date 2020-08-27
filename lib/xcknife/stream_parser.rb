@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'xcknife/json_stream_parser_helper'
 require 'json'
 require 'set'
@@ -33,6 +35,7 @@ module XCKnife
     class PartitionResult
       TimeImbalances = Struct.new :partition_set, :partitions
       attr_reader :stats, :test_maps, :test_times, :total_test_time, :test_time_imbalances, :test_time_for_partitions
+
       extend Forwardable
       delegate ResultStats.members => :@stats
 
@@ -47,10 +50,11 @@ module XCKnife
       end
 
       private
+
       # Yields the imbalances ratios of the partition sets, and the internal imbalance ratio of the respective partitions
       def compute_test_time_imbalances
         times = test_times
-        average_partition_size = times.map { |l| l.inject(:+).to_f / l.size}
+        average_partition_size = times.map { |l| l.inject(:+).to_f / l.size }
         ideal_partition_set_avg = average_partition_size.inject(:+) / @partition_sets.size
         partition_set_imbalance = average_partition_size.map { |avg| avg / ideal_partition_set_avg }
 
@@ -88,13 +92,15 @@ module XCKnife
     end
 
     def test_time_for_partitions(historical_events, current_events = nil)
-      analyzer =  EventsAnalyzer.for(current_events, relevant_partitions)
+      analyzer = EventsAnalyzer.for(current_events, relevant_partitions)
       @stats[:current_total_tests] = analyzer.total_tests
       times_for_target_class = Hash.new { |h, current_target| h[current_target] = Hash.new(0) }
       each_test_event(historical_events) do |target_name, result|
         next unless relevant_partitions.include?(target_name)
+
         inc_stat :historical_total_tests
-        next unless analyzer.has_test_class?(target_name, result.className)
+        next unless analyzer.test_class?(target_name, result.className)
+
         times_for_target_class[target_name][result.className] += (result.totalDuration * 1000).ceil
       end
 
@@ -102,10 +108,11 @@ module XCKnife
       hash_partitions(times_for_target_class)
     end
 
+    # rubocop:disable Metrics/CyclomaticComplexity
     def split_machines_proportionally(partitions)
       total = 0
       partitions.each do |test_time_map|
-        each_duration(test_time_map) { |duration_in_milliseconds| total += duration_in_milliseconds}
+        each_duration(test_time_map) { |duration_in_milliseconds| total += duration_in_milliseconds }
       end
 
       used_shards = 0
@@ -121,18 +128,17 @@ module XCKnife
         PartitionWithMachines.new(test_time_map, n, partition_time, max_shard_count, options)
       end
 
-      fifo_with_machines_who_can_use_more_shards = partition_with_machines_list.select { |x| x.number_of_shards < x.max_shard_count}.sort_by(&:partition_time)
+      fifo_with_machines_who_can_use_more_shards = partition_with_machines_list.select { |x| x.number_of_shards < x.max_shard_count }.sort_by(&:partition_time)
       while number_of_shards > used_shards
         if fifo_with_machines_who_can_use_more_shards.empty?
           break if @allow_fewer_shards
+
           raise XCKnife::XCKnifeError, "There are #{number_of_shards - used_shards} extra machines"
         end
         machine = fifo_with_machines_who_can_use_more_shards.pop
         machine.number_of_shards += 1
         used_shards += 1
-        if machine.number_of_shards < machine.max_shard_count
-          fifo_with_machines_who_can_use_more_shards.unshift(machine)
-        end
+        fifo_with_machines_who_can_use_more_shards.unshift(machine) if machine.number_of_shards < machine.max_shard_count
       end
       partition_with_machines_list
     end
@@ -140,8 +146,9 @@ module XCKnife
     # Computes a 2-aproximation to the optimal partition_time, which is an instance of the Open shop scheduling problem (which is NP-hard)
     # see: https://en.wikipedia.org/wiki/Open-shop_scheduling
     def compute_single_shards(number_of_shards, test_time_map, options: Options::DEFAULT)
-      raise XCKnife::XCKnifeError, "There are not enough workers provided" if number_of_shards <= 0
-      raise XCKnife::XCKnifeError, "Cannot shard an empty partition_time" if test_time_map.empty?
+      raise XCKnife::XCKnifeError, 'There are not enough workers provided' if number_of_shards <= 0
+      raise XCKnife::XCKnifeError, 'Cannot shard an empty partition_time' if test_time_map.empty?
+
       assignements = Array.new(number_of_shards) { MachineAssignment.new(Hash.new { |k, v| k[v] = [] }, 0) }
 
       list_of_test_target_class_times = []
@@ -153,21 +160,19 @@ module XCKnife
 
       # This might seem like an uncessary level of indirection, but it allows us to keep
       # logic consistent regardless of the `split_bundles_across_machines` option
-      list_of_test_target_classes_times = list_of_test_target_class_times.group_by do |test_target, class_name, duration_in_milliseconds|
-        if options.split_bundles_across_machines
-          [test_target, class_name]
-        else
-          test_target
-        end
-      end.map do |(test_target, _), classes|
+      group = list_of_test_target_class_times.group_by do |test_target, class_name, _duration_in_milliseconds|
+        options.split_bundles_across_machines ? [test_target, class_name] : test_target
+      end
+
+      list_of_test_target_classes_times = group.map do |(test_target, _), classes|
         [
           test_target,
-          classes.map { |test_target, class_name, duration_in_milliseconds| class_name },
-          classes.reduce(0) { |total_duration, (test_target, class_name, duration_in_milliseconds)| total_duration + duration_in_milliseconds},
+          classes.map { |_test_target, class_name, _duration_in_milliseconds| class_name },
+          classes.reduce(0) { |total_duration, (_test_target, _class_name, duration_in_milliseconds)| total_duration + duration_in_milliseconds }
         ]
       end
 
-      list_of_test_target_classes_times.sort_by! { |test_target, class_names, duration_in_milliseconds| -duration_in_milliseconds }
+      list_of_test_target_classes_times.sort_by! { |_test_target, _class_names, duration_in_milliseconds| -duration_in_milliseconds }
       list_of_test_target_classes_times.each do |test_target, class_names, duration_in_milliseconds|
         assignemnt = assignements.min_by(&:total_time)
         assignemnt.test_time_map[test_target].concat class_names
@@ -183,27 +188,31 @@ module XCKnife
 
       assignements
     end
+    # rubocop:enable Metrics/CyclomaticComplexity
 
     def parse_json_stream_file(filename)
       return nil if filename.nil?
-      return [] unless File.exists?(filename)
+      return [] unless File.exist?(filename)
+
       lines = IO.readlines(filename)
-      lines.lazy.map { |line| OpenStruct.new(JSON.load(line)) }
+      lines.lazy.map { |line| OpenStruct.new(JSON.parse(line)) }
     end
 
     private
+
     def inc_stat(name)
       @stats[name] += 1
     end
 
-    def each_duration(test_time_map, &block)
-      test_time_map.each do |test_target, class_times|
-        class_times.each do |class_name, duration_in_milliseconds|
+    def each_duration(test_time_map)
+      test_time_map.each do |_test_target, class_times|
+        class_times.each do |_class_name, duration_in_milliseconds|
           yield(duration_in_milliseconds)
         end
       end
     end
 
+    # rubocop:disable Metrics/CyclomaticComplexity
     def extrapolate_times_for_current_events(analyzer, times_for_target_class)
       median_map = {}
       times_for_target_class.each do |test_target, class_times|
@@ -213,9 +222,9 @@ module XCKnife
       all_times_for_all_classes = times_for_target_class.values.flat_map(&:values)
       median_of_targets = median(all_times_for_all_classes)
       analyzer.target_class_map.each do |test_target, class_set|
-        if times_for_target_class.has_key?(test_target)
+        if times_for_target_class.key?(test_target)
           class_set.each do |clazz|
-            unless times_for_target_class[test_target].has_key?(clazz)
+            unless times_for_target_class[test_target].key?(clazz)
               inc_stat :class_extrapolations
               times_for_target_class[test_target][clazz] = median_map[test_target]
             end
@@ -233,6 +242,7 @@ module XCKnife
     DEFAULT_EXTRAPOLATED_DURATION = 1000
     def extrapolated_duration(median_of_targets, class_set)
       return DEFAULT_EXTRAPOLATED_DURATION if median_of_targets.nil?
+
       median_of_targets / class_set.size
     end
 
@@ -248,10 +258,9 @@ module XCKnife
         end
       end
       ret.each_with_index do |partition, index|
-        if partition.empty?
-          raise XCKnife::XCKnifeError, "The following partition has no tests: #{test_partitions[index].to_a.inspect}"
-        end
+        raise XCKnife::XCKnifeError, "The following partition has no tests: #{test_partitions[index].to_a.inspect}" if partition.empty?
       end
     end
   end
+  # rubocop:enable Metrics/CyclomaticComplexity
 end

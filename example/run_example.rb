@@ -1,13 +1,15 @@
+# frozen_string_literal: true
+
 require_relative '../lib/xcknife'
 require 'pp'
 
 # Gem usage of xcknife. Functionaly equivalent to
 # $ xcknife -p CommonTestTarget -p CommonTestTarget,iPadTestTarget 6 example/xcknife-exemplar-historical-data.json-stream example/xcknife-exemplar.json-stream
-include XCKnife::XCToolCmdHelper
+
 TARGET_PARTITIONS = {
-  "AllTests" => ["CommonTestTarget", "iPadTestTarget"],
-  "OnlyCommon" => ["CommonTestTarget"]
-}
+  'AllTests' => %w[CommonTestTarget iPadTestTarget],
+  'OnlyCommon' => ['CommonTestTarget']
+}.freeze
 
 def run(historical_file, current_file)
   test_target_names = TARGET_PARTITIONS.keys
@@ -20,16 +22,16 @@ def run(historical_file, current_file)
   puts "imbalances = #{result.test_time_imbalances.to_h.inspect}"
   shard_number = 0
   puts "size = #{partition_sets.size}"
-  puts "sizes = #{partition_sets.map(&:size).join(", ")}"
+  puts "sizes = #{partition_sets.map(&:size).join(', ')}"
   partition_sets.each_with_index do |partition_set, i|
     target_name = test_target_names[i]
     partition_set.each do |partition|
       puts "target name for worker #{shard_number} = #{target_name}"
-      puts "only is: #{xctool_only_arguments(partition).inspect}"
-      puts "skip-only is: #{xcodebuild_skip_arguments(partition, result.test_time_for_partitions).inspect}"
+      puts "only is: #{XCKnife::XCToolCmdHelper.xctool_only_arguments(partition).inspect}"
+      puts "skip-only is: #{XCKnife::XCToolCmdHelper.xcodebuild_skip_arguments(partition, result.test_time_for_partitions).inspect}"
       shard_number += 1
     end
   end
 end
 
-run("xcknife-exemplar-historical-data.json-stream", "xcknife-exemplar.json-stream")
+run('xcknife-exemplar-historical-data.json-stream', 'xcknife-exemplar.json-stream')

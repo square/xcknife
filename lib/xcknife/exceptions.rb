@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module XCKnife
   # Base error class for xcknife
   XCKnifeError = Class.new(RuntimeError)

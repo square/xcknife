@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'rexml/document'
 
 module XCKnife
@@ -8,20 +10,18 @@ module XCKnife
       ret = {}
       xml_root = REXML::Document.new(xscheme_data).root
 
+      action = xml_root.elements['//TestAction']
+      return ret if action.nil?
 
-      action = xml_root.elements["//TestAction"]
+      action = xml_root.elements['//LaunchAction'] if action.attributes['shouldUseLaunchSchemeArgsEnv'] == 'YES'
       return ret if action.nil?
-      if action.attributes['shouldUseLaunchSchemeArgsEnv'] == "YES"
-        action = xml_root.elements["//LaunchAction"]
-      end
-      return ret if action.nil?
-      env_elements = action.elements[".//EnvironmentVariables"]
+
+      env_elements = action.elements['.//EnvironmentVariables']
       return ret if env_elements.nil?
+
       env_elements.elements.each do |e|
         attrs = e.attributes
-        if attrs["isEnabled"] == "YES"
-          ret[attrs["key"]] = attrs["value"]
-        end
+        ret[attrs['key']] = attrs['value'] if attrs['isEnabled'] == 'YES'
       end
       ret
     end

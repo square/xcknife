@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'optparse'
 
 module XCKnife
@@ -33,10 +35,10 @@ module XCKnife
     end
 
     private
+
     def gen_abbreviated_output(result)
       result.test_maps.map { |partition_set| only_arguments_for_a_partition_set(partition_set, output_type) }
     end
-
 
     def output_type
       @xcodebuild_output ? :xcodebuild : :xctool
@@ -47,7 +49,7 @@ module XCKnife
         metadata: {
           worker_count: @worker_count,
           partition_set_count: result.test_maps.size,
-          total_time_in_ms: result.total_test_time,
+          total_time_in_ms: result.total_test_time
         }.merge(result.stats.to_h),
         partition_set_data: partition_sets_data(result)
       }
@@ -81,18 +83,15 @@ module XCKnife
     def write_output(data)
       json = JSON.pretty_generate(data)
       return puts json if @output_file_name.nil?
-      File.open(@output_file_name, "w") { |f| f.puts(json) }
+
+      File.open(@output_file_name, 'w') { |f| f.puts(json) }
       puts "Wrote file to: #{@output_file_name}"
     end
 
     def parse_arguments(args)
       positional_arguments = parse_options(args)
-      if positional_arguments.size < required_arguments.size
-        warn_and_exit("You must specify *all* required arguments: #{required_arguments.join(", ")}")
-      end
-      if @partitions.empty?
-        warn_and_exit("At least one target partition set must be provided with -p flag")
-      end
+      warn_and_exit("You must specify *all* required arguments: #{required_arguments.join(', ')}") if positional_arguments.size < required_arguments.size
+      warn_and_exit('At least one target partition set must be provided with -p flag') if @partitions.empty?
       worker_count, @historical_timings_file, @current_tests_file = positional_arguments
       @worker_count = Integer(worker_count)
     end
@@ -101,24 +100,24 @@ module XCKnife
       build_parser
       begin
         parser.parse(args)
-      rescue OptionParser::ParseError => error
-        warn_and_exit(error)
+      rescue OptionParser::ParseError => e
+        warn_and_exit(e)
       end
     end
 
     def build_parser
       @parser = OptionParser.new do |opts|
         opts.banner += " #{arguments_banner}"
-        opts.on("-p", "--partition TARGETS",
-          "Comma separated list of targets. Can be used multiple times.") do |v|
+        opts.on('-p', '--partition TARGETS',
+                'Comma separated list of targets. Can be used multiple times.') do |v|
           @partition_names << v
-          @partitions << v.split(",")
+          @partitions << v.split(',')
         end
-        opts.on("-o", "--output FILENAME", "Output file. Defaults to STDOUT") { |v| @output_file_name = v }
-        opts.on("-a", "--abbrev", "Results are abbreviated") { |v| @abbreviated_output = v }
-        opts.on("-x", "--xcodebuild-output", "Output is formatted for xcodebuild") { |v| @xcodebuild_output = v }
+        opts.on('-o', '--output FILENAME', 'Output file. Defaults to STDOUT') { |v| @output_file_name = v }
+        opts.on('-a', '--abbrev', 'Results are abbreviated') { |v| @abbreviated_output = v }
+        opts.on('-x', '--xcodebuild-output', 'Output is formatted for xcodebuild') { |v| @xcodebuild_output = v }
 
-        opts.on_tail("-h", "--help", "Show this message") do
+        opts.on_tail('-h', '--help', 'Show this message') do
           puts opts
           exit
         end
@@ -135,7 +134,7 @@ module XCKnife
 
     def arguments_banner
       optional_args = optional_arguments.map { |a| "[#{a}]" }
-      (required_arguments + optional_args).join(" ")
+      (required_arguments + optional_args).join(' ')
     end
 
     def warn_and_exit(msg)
