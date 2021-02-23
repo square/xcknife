@@ -454,8 +454,8 @@ module XCKnife
           | # or swift instance method
             _? # only present on Xcode 10.0 and below
             (?:@objc\s)? # optional objc annotation
-            (?:[^.]+\.)? # module name
-            (.+) # class name
+            (?:[^. ]+\.)? # module name
+            ([^ ]+) # class name
             \.(test.+)\s->\s\(\) # method signature
         )
       $/ox
