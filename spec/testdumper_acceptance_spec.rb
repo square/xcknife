@@ -105,6 +105,6 @@ describe 'Test Dumper Acceptance', if: RUBY_PLATFORM.include?('darwin') do
 
     # Test dumper outputs tests enumerated by nm by threading, check for their presence rather than their exact order
     output_lines = IO.read(outpath).lines
-    EXPECTED_OUTPUT.lines.each { |line| expect(output_lines).to include(line) }
+    expect(output_lines.sort).to eq(EXPECTED_OUTPUT.lines.sort)
   end
 end
