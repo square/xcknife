@@ -9,5 +9,5 @@ require 'xcknife/exceptions'
 require 'xcknife/xcscheme_analyzer'
 
 module XCKnife
-  VERSION = '0.12.0'
+  VERSION = '0.13.0'
 end
