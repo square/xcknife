@@ -12,13 +12,14 @@ module XCKnife
 
     attr_reader :number_of_shards, :test_partitions, :stats, :relevant_partitions
 
-    def initialize(number_of_shards, test_partitions, options_for_metapartition: Array.new(test_partitions.size, {}), allow_fewer_shards: false)
+    def initialize(number_of_shards, test_partitions, options_for_metapartition: Array.new(test_partitions.size, {}), allow_fewer_shards: false, on_extrapolation: nil)
       @number_of_shards = number_of_shards
       @test_partitions = test_partitions.map(&:to_set)
       @relevant_partitions = test_partitions.flatten.to_set
       @stats = ResultStats.new
       @options_for_metapartition = options_for_metapartition.map { |o| Options::DEFAULT.merge(o) }
       @allow_fewer_shards = allow_fewer_shards
+      @on_extrapolation = on_extrapolation
       ResultStats.members.each { |k| @stats[k] = 0 }
     end
 
@@ -224,15 +225,18 @@ module XCKnife
       analyzer.target_class_map.each do |test_target, class_set|
         if times_for_target_class.key?(test_target)
           class_set.each do |clazz|
-            unless times_for_target_class[test_target].key?(clazz)
-              inc_stat :class_extrapolations
-              times_for_target_class[test_target][clazz] = median_map[test_target]
-            end
+            next if times_for_target_class[test_target].key?(clazz)
+
+            inc_stat :class_extrapolations
+            @on_extrapolation&.call(test_target: test_target, test_class: clazz)
+            times_for_target_class[test_target][clazz] = median_map[test_target]
           end
         else
           inc_stat :target_extrapolations
+          @on_extrapolation&.call(test_target: test_target, test_class: nil)
           class_set.each do |clazz|
             inc_stat :class_extrapolations
+            @on_extrapolation&.call(test_target: test_target, test_class: clazz)
             times_for_target_class[test_target][clazz] = extrapolated_duration(median_of_targets, class_set)
           end
         end

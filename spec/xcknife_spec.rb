@@ -88,7 +88,12 @@ describe XCKnife::StreamParser do
   end
 
   context 'provided historical events' do
-    subject { XCKnife::StreamParser.new(2, [%w[TestTarget1 TestTarget2 TestTarget3 NewTestTarget1]]) }
+    let(:extrapolations) { [] }
+    let(:on_extrapolation) do
+      ex = extrapolations
+      ->(test_target:, test_class:) { ex << { test_target: test_target, test_class: test_class } }
+    end
+    subject { XCKnife::StreamParser.new(2, [%w[TestTarget1 TestTarget2 TestTarget3 NewTestTarget1]], on_extrapolation: on_extrapolation) }
 
     it 'ignores test targets not present on current events' do
       historical_events = [xctool_target_event('TestTarget1'),
@@ -163,6 +168,40 @@ describe XCKnife::StreamParser do
                                }
                            }])
       expect(subject.stats.to_h).to eq({ historical_total_tests: 3, current_total_tests: 5, class_extrapolations: 1, target_extrapolations: 0 })
+    end
+
+    it 'extrapolates for new test targets' do
+      historical_events = [
+        xctool_target_event('TestTarget1'),
+        xctool_test_event('ClassTest1', 'test1', 1.0),
+        xctool_test_event('ClassTest2', 'test2', 5.0),
+        xctool_test_event('ClassTest3', 'test3', 10_000.0)
+      ]
+      current_events = historical_events + [
+        xctool_target_event('TestTarget1'),
+        xctool_test_event('ClassTest2', 'test2'),
+        xctool_test_event('ClassTestNew', 'test1'),
+        xctool_target_event('TestTarget2'),
+        xctool_test_event('ClassTest4', 'test4')
+      ]
+      result = subject.test_time_for_partitions(historical_events, current_events)
+      median = 5000
+      expect(result).to eq([{
+                             'TestTarget1' =>
+                               {
+                                 'ClassTest1' => 1000,
+                                 'ClassTest2' => 5000,
+                                 'ClassTest3' => 10_000_000,
+                                 'ClassTestNew' => median
+                               },
+                             'TestTarget2' => { 'ClassTest4' => median }
+                           }])
+      expect(subject.stats.to_h).to eq({ historical_total_tests: 3, current_total_tests: 6, class_extrapolations: 2, target_extrapolations: 1 })
+      expect(extrapolations).to eq  [
+        { test_class: 'ClassTestNew', test_target: 'TestTarget1' },
+        { test_class: nil, test_target: 'TestTarget2' },
+        { test_class: 'ClassTest4', test_target: 'TestTarget2' }
+      ]
     end
 
     it "ignores test classes that don't belong to relevant targets" do
