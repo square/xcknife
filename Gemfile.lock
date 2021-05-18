@@ -51,7 +51,7 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
-  bundler (~> 1.12)
+  bundler (>= 2.1.0)
   debase
   rake (~> 13.0.1)
   rspec (~> 3.9.0)
@@ -60,4 +60,4 @@ DEPENDENCIES
   xcknife!
 
 BUNDLED WITH
-   1.17.3
+   2.1.4
